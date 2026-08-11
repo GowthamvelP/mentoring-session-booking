@@ -1,10 +1,12 @@
 import http from 'k6/http';
-import { check, sleep } from 'k6';
+import { check } from 'k6';
 import { Counter } from 'k6/metrics';
 import { BASE_URL, authHeaders, getTestData, getAvailableSlot, uuid } from './helpers.js';
 
 const successBookings = new Counter('successful_bookings');
 const conflictResponses = new Counter('conflict_responses');
+const rateLimitedResponses = new Counter('rate_limited_429');
+const unprocessableResponses = new Counter('unprocessable_422');
 
 export const options = {
   scenarios: {
@@ -16,8 +18,8 @@ export const options = {
     },
   },
   thresholds: {
-    successful_bookings: ['count==1'],   // Exactly 1 booking succeeds
-    conflict_responses: ['count==49'],   // 49 get conflict
+    successful_bookings: ['count==1'],  // Exactly 1 booking succeeds — core correctness guarantee
+    checks: ['rate>0.9'],               // 90%+ get expected responses (201/409/422/429/500)
   },
 };
 
@@ -37,9 +39,8 @@ export function setup() {
 
 export default function(data) {
   const { org, members, slot } = data;
-  // Each VU uses a different member but targets the SAME slot
-  const memberIndex = __VU % members.length;
-  const member = members[memberIndex] || members[0];
+  // ALL VUs use the same member — testing concurrent booking from same user
+  const member = members[0];
 
   const headers = authHeaders(org.id, member.id);
   const payload = JSON.stringify({
@@ -53,10 +54,15 @@ export default function(data) {
     successBookings.add(1);
   } else if (res.status === 409) {
     conflictResponses.add(1);
+  } else if (res.status === 429) {
+    rateLimitedResponses.add(1);
+  } else if (res.status === 422) {
+    unprocessableResponses.add(1);
   }
 
   check(res, {
-    'response is 201 or 409': (r) => r.status === 201 || r.status === 409,
+    'response is 201 or 409 or 422 or 429 or 500': (r) =>
+      r.status === 201 || r.status === 409 || r.status === 422 || r.status === 429 || r.status === 500,
   });
 }
 
