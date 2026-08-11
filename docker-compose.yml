@@ -5,6 +5,8 @@ services:
       POSTGRES_USER: mentoring
       POSTGRES_PASSWORD: mentoring
       POSTGRES_DB: mentoring_development
+    ports:
+      - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
@@ -15,6 +17,8 @@ services:
 
   redis:
     image: redis:7-alpine
+    ports:
+      - "6379:6379"
     volumes:
       - redis_data:/data
     healthcheck:
