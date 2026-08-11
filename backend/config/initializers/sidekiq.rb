@@ -3,11 +3,9 @@
 require "sidekiq"
 require "sidekiq/web"
 
-REDIS_URL = ENV.fetch("REDIS_URL", "redis://localhost:6379/0")
-
 Sidekiq.configure_server do |config|
   config.redis = {
-    url: REDIS_URL,
+    url: ENV.fetch("REDIS_URL", "redis://localhost:6379/0"),
     pool_timeout: 5,
     size: ENV.fetch("SIDEKIQ_CONCURRENCY", 10).to_i + 5  # concurrency + buffer
   }
@@ -32,7 +30,7 @@ end
 
 Sidekiq.configure_client do |config|
   config.redis = {
-    url: REDIS_URL,
+    url: ENV.fetch("REDIS_URL", "redis://localhost:6379/0"),
     pool_timeout: 5,
     size: 5  # Client pool smaller than server
   }

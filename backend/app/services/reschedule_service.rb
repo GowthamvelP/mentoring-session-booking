@@ -12,6 +12,8 @@
 #   result[:booking]     # => New booking (on success)
 #   result[:old_booking] # => Cancelled original (on success)
 class RescheduleService
+  include CacheInvalidation
+
   def self.call(booking:, new_slot_id:, user:, timezone: nil)
     new(booking: booking, new_slot_id: new_slot_id, user: user, timezone: timezone).call
   end
@@ -24,18 +26,23 @@ class RescheduleService
   end
 
   def call
+    Rails.logger.debug { "RescheduleService: attempting reschedule for booking=#{@booking.id}, new_slot=#{@new_slot_id}, user=#{@user.id}" }
+
     # 1. Ownership check
     unless @booking.member_id == @user.id
+      Rails.logger.warn("RescheduleService: ownership violation — user=#{@user.id} attempted to reschedule booking=#{@booking.id} owned by member=#{@booking.member_id}")
       return { success: false, error: "You can only reschedule your own bookings", status: :forbidden }
     end
 
     # 2. Status check
     unless @booking.confirmed?
+      Rails.logger.warn("RescheduleService: invalid status — booking=#{@booking.id} status=#{@booking.status}, expected confirmed")
       return { success: false, error: "Only confirmed bookings can be rescheduled", status: :unprocessable_entity }
     end
 
     # 3. Can't reschedule to the same slot
     if @booking.slot_id == @new_slot_id
+      Rails.logger.warn("RescheduleService: same slot — booking=#{@booking.id} already on slot=#{@new_slot_id}")
       return { success: false, error: "New slot must be different from current slot", status: :unprocessable_entity }
     end
 
@@ -70,26 +77,27 @@ class RescheduleService
 
     # 5. Post-commit: invalidate cache for both mentors (may be different)
     new_mentor_id = new_booking.slot.mentor_id
-    invalidate_cache(original_mentor_id)
-    invalidate_cache(new_mentor_id) if new_mentor_id != original_mentor_id
+    invalidate_slot_cache(original_mentor_id)
+    invalidate_slot_cache(new_mentor_id) if new_mentor_id != original_mentor_id
 
     enqueue_reschedule_job(@booking, new_booking)
+
+    Rails.logger.debug { "RescheduleService: reschedule successful — old_booking=#{@booking.id}, new_booking=#{new_booking.id}" }
 
     { success: true, booking: new_booking, old_booking: @booking }
 
   rescue SlotUnavailableError => e
+    Rails.logger.warn("RescheduleService: slot conflict for new_slot=#{@new_slot_id} — #{e.message}")
     { success: false, error: e.message, status: :unprocessable_entity }
   rescue ActiveRecord::RecordNotFound
+    Rails.logger.warn("RescheduleService: new slot not found, slot_id=#{@new_slot_id}")
     { success: false, error: "New slot not found", status: :not_found }
   rescue ActiveRecord::RecordInvalid => e
+    Rails.logger.error("RescheduleService: unexpected error during reschedule of booking=#{@booking.id}: #{e.message}")
     { success: false, error: "Reschedule failed: #{e.message}", status: :unprocessable_entity }
   end
 
   private
-
-  def invalidate_cache(mentor_id)
-    Rails.cache.delete_matched("slots:#{mentor_id}:*")
-  end
 
   def enqueue_reschedule_job(old_booking, new_booking)
     BookingRescheduleJob.perform_later(old_booking.id, new_booking.id)

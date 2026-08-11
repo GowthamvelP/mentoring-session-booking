@@ -13,6 +13,8 @@
 #   result[:error]   # => Error message (on failure)
 #   result[:status]  # => HTTP status symbol (on failure)
 class BookingService
+  include CacheInvalidation
+
   def self.call(slot_id:, member:, idempotency_key:, timezone: nil)
     new(slot_id: slot_id, member: member, idempotency_key: idempotency_key, timezone: timezone).call
   end
@@ -25,13 +27,19 @@ class BookingService
   end
 
   def call
+    Rails.logger.debug { "BookingService: checking idempotency for key=#{@idempotency_key}" }
+
     # 1. Idempotency check — return existing booking if key already used
     existing = Booking.find_by(idempotency_key: @idempotency_key)
-    return { success: true, booking: existing, existing: true } if existing
+    if existing
+      Rails.logger.debug { "BookingService: idempotent replay for key=#{@idempotency_key}, booking=#{existing.id}" }
+      return { success: true, booking: existing, existing: true }
+    end
 
     # 1.5. Per-member booking limit check
     max_bookings = ActsAsTenant.current_tenant&.max_active_bookings
     if max_bookings && @member.bookings.active.count >= max_bookings
+      Rails.logger.warn("BookingService: booking limit reached for member=#{@member.id}, limit=#{max_bookings}")
       return { success: false, error: "Booking limit reached (maximum #{max_bookings} active sessions)", status: :unprocessable_entity }
     end
 
@@ -64,14 +72,18 @@ class BookingService
     end
 
     # 3. Post-commit operations (outside transaction)
-    invalidate_cache(booking.slot.mentor_id)
+    invalidate_slot_cache(booking.slot.mentor_id)
     enqueue_confirmation_job(booking)
+
+    Rails.logger.debug { "BookingService: booking created successfully, id=#{booking.id}, slot=#{@slot_id}" }
 
     { success: true, booking: booking, existing: false }
 
   rescue SlotUnavailableError => e
+    Rails.logger.warn("BookingService: slot conflict for slot=#{@slot_id}, member=#{@member.id} — #{e.message}")
     { success: false, error: e.message, status: :conflict }
   rescue ActiveRecord::RecordNotFound
+    Rails.logger.warn("BookingService: slot not found, slot_id=#{@slot_id}")
     { success: false, error: "Slot not found", status: :not_found }
   rescue ActiveRecord::RecordInvalid => e
     # Handle unique constraint violation on idempotency_key (race condition)
@@ -79,15 +91,12 @@ class BookingService
     if existing
       { success: true, booking: existing, existing: true }
     else
+      Rails.logger.error("BookingService: unexpected validation error during booking: #{e.message}")
       { success: false, error: e.message, status: :unprocessable_entity }
     end
   end
 
   private
-
-  def invalidate_cache(mentor_id)
-    Rails.cache.delete_matched("slots:#{mentor_id}:*")
-  end
 
   def enqueue_confirmation_job(booking)
     BookingConfirmationJob.perform_later(booking.id)

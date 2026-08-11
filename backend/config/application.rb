@@ -47,6 +47,9 @@ module Backend
     # Use Sidekiq as Active Job adapter
     config.active_job.queue_adapter = :sidekiq
 
+    # Configurable log level via environment variable
+    config.log_level = ENV.fetch("LOG_LEVEL", "info").to_sym
+
     # Insert correlation ID middleware at the top of the stack
     config.middleware.insert_before 0, CorrelationIdMiddleware
 

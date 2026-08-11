@@ -12,60 +12,37 @@ class NotificationService
   class << self
     # Notify member + mentor that a booking is confirmed
     def booking_confirmed(booking)
-      member = booking.member
-      mentor = booking.slot.mentor
-
-      # Log notification (MVP — replace with ActionMailer in production)
-      log_notification(
-        type: :booking_confirmed,
-        recipients: [member, mentor],
-        booking: booking,
-        message: "Session confirmed: #{mentor.name} with #{member.name} on #{format_time(booking.slot.start_time, booking.organization.timezone)}"
-      )
-
-      # Future: BookingMailer.confirmation_email(booking).deliver_later
-      # Future: PushNotificationService.send(member, "Your session with #{mentor.name} is confirmed!")
+      notify(:booking_confirmed, booking) do |b|
+        mentor = b.slot.mentor
+        "Session confirmed: #{mentor.name} with #{b.member.name} on #{format_time(b.slot.start_time, b.organization.timezone)}"
+      end
     end
 
     # Notify member + mentor that a booking is cancelled
     def booking_cancelled(booking)
-      member = booking.member
-      mentor = booking.slot.mentor
-
-      log_notification(
-        type: :booking_cancelled,
-        recipients: [member, mentor],
-        booking: booking,
-        message: "Session cancelled: #{mentor.name} with #{member.name} (was #{format_time(booking.slot.start_time, booking.organization.timezone)})"
-      )
-
-      # Future: BookingMailer.cancellation_email(booking).deliver_later
+      notify(:booking_cancelled, booking) do |b|
+        "Session cancelled: #{b.slot.mentor.name} with #{b.member.name}"
+      end
     end
 
     # Notify member + mentor that a booking is rescheduled
     def booking_rescheduled(old_booking, new_booking)
-      member = new_booking.member
-      mentor = new_booking.slot.mentor
       tz = new_booking.organization.timezone
-
-      log_notification(
-        type: :booking_rescheduled,
-        recipients: [member, mentor],
-        booking: new_booking,
-        message: "Session rescheduled: #{format_time(old_booking.slot.start_time, tz)} → #{format_time(new_booking.slot.start_time, tz)}"
-      )
-
-      # Future: BookingMailer.reschedule_email(old_booking, new_booking).deliver_later
+      notify(:booking_rescheduled, new_booking, recipients_from: [new_booking.member, new_booking.slot.mentor]) do |_b|
+        "Session rescheduled: #{format_time(old_booking.slot.start_time, tz)} → #{format_time(new_booking.slot.start_time, tz)}"
+      end
     end
 
     private
 
-    def log_notification(type:, recipients:, booking:, message:)
+    def notify(type, booking, recipients_from: nil)
+      recipients = recipients_from || [booking.member, booking.slot.mentor]
+      message = yield(booking)
+
       Rails.logger.info(
         event: "notification_sent",
         notification_type: type,
         recipient_ids: recipients.map(&:id),
-        recipient_names: recipients.map(&:name),
         booking_id: booking.id,
         organization_id: booking.organization_id,
         message: message

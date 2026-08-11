@@ -2,23 +2,26 @@ import http from 'k6/http';
 import { check } from 'k6';
 import { Counter } from 'k6/metrics';
 import { BASE_URL, authHeaders, getTestData, getAvailableSlot, uuid } from '../helpers.js';
+import { profiles } from '../config.js';
 
 const successBookings = new Counter('successful_bookings');
 const conflictResponses = new Counter('conflict_responses');
+
+const profile = profiles.dev.concurrency;
 
 // DEV PROFILE: Conservative — validates correctness on Docker Desktop
 export const options = {
   scenarios: {
     concurrent_booking: {
       executor: 'shared-iterations',
-      vus: 5,
-      iterations: 5,
-      maxDuration: '15s',
+      vus: profile.vus,
+      iterations: profile.iterations,
+      maxDuration: profile.maxDuration,
     },
   },
   thresholds: {
-    successful_bookings: ['count==1'],
-    checks: ['rate>0.8'],
+    successful_bookings: [profiles.dev.thresholds.concurrency.bookings],
+    checks: [profiles.dev.thresholds.concurrency.checks],
   },
 };
 

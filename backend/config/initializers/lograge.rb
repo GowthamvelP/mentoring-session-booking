@@ -10,7 +10,8 @@ Rails.application.configure do
       correlation_id: RequestStore.store[:correlation_id],
       user_id: RequestStore.store[:user_id],
       org_id: RequestStore.store[:org_id],
-      time: Time.current.utc.iso8601
+      time: Time.current.utc.iso8601,
+      severity: event.payload[:level] || "INFO"
     }
   end
 

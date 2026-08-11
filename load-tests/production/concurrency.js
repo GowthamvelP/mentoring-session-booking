@@ -2,23 +2,26 @@ import http from 'k6/http';
 import { check } from 'k6';
 import { Counter } from 'k6/metrics';
 import { BASE_URL, authHeaders, getTestData, getAvailableSlot, uuid } from '../helpers.js';
+import { profiles } from '../config.js';
 
 const successBookings = new Counter('successful_bookings');
 const conflictResponses = new Counter('conflict_responses');
+
+const profile = profiles.production.concurrency;
 
 // PRODUCTION PROFILE: Aggressive — validates lock correctness at scale
 export const options = {
   scenarios: {
     concurrent_booking: {
       executor: 'shared-iterations',
-      vus: 100,
-      iterations: 100,
-      maxDuration: '30s',
+      vus: profile.vus,
+      iterations: profile.iterations,
+      maxDuration: profile.maxDuration,
     },
   },
   thresholds: {
-    successful_bookings: ['count==1'],
-    checks: ['rate>0.95'],
+    successful_bookings: [profiles.production.thresholds.concurrency.bookings],
+    checks: [profiles.production.thresholds.concurrency.checks],
   },
 };
 
