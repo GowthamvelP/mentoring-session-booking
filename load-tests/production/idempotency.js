@@ -25,7 +25,8 @@ export const options = {
 export function setup() {
   const { org, members, mentors } = getTestData();
   const member = members[0];
-  const mentor = mentors[0];
+  // Use a different mentor than concurrency test to avoid slot exhaustion
+  const mentor = mentors.length > 1 ? mentors[1] : mentors[0];
   const headers = authHeaders(org.id, member.id);
   const res = http.get(`${BASE_URL}/mentors/${mentor.id}/slots`, { headers });
   const body = JSON.parse(res.body);

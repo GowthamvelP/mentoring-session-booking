@@ -13,6 +13,15 @@ if ! curl -sf "$BASE_URL/health" >/dev/null; then echo "❌ Backend not reachabl
 echo "✅ Backend healthy"
 echo ""
 
+echo "🔄 Resetting test state..."
+if [ "$BASE_URL" = "http://localhost:3000/api/v1" ]; then
+  docker compose exec -T backend bin/rails runner "Slot.where(status: 'booked').update_all(status: 'available'); Booking.delete_all; Rails.cache.clear" 2>/dev/null || true
+  echo "✅ Test state reset (local mode)"
+else
+  echo "⚠️  Skipping state reset (remote target — ensure clean state manually)"
+fi
+echo ""
+
 echo "--- Concurrency (100 VUs) ---"
 k6 run -e BASE_URL=$BASE_URL production/concurrency.js
 echo ""
