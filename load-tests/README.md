@@ -1,6 +1,6 @@
-# Load Testing — Non-Functional Requirements Validation
+# Load Testing
 
-These scripts validate the system's behavior under concurrent load using [k6](https://k6.io/).
+Validates non-functional requirements (concurrency, idempotency, rate limiting, tenant isolation, performance) using [k6](https://k6.io/).
 
 ## Prerequisites
 
@@ -12,29 +12,77 @@ brew install k6
 docker-compose up -d
 ```
 
-## Test Scenarios
+## Development Profile (Docker Desktop)
 
-| Script | What It Tests | Expected Result |
-|--------|--------------|-----------------|
-| `concurrency.js` | 50 concurrent bookings for the same slot | Exactly 1 succeeds (201), others get 409 |
-| `idempotency.js` | Same request sent 100 times | All return 200, only 1 record created |
-| `rate-limiting.js` | 20 rapid booking requests | First 10 succeed, next 10 get 429 |
-| `multi-tenant.js` | Cross-org data access attempts | All return 401 or empty results |
-| `load-booking-flow.js` | Sustained booking load (50 VUs, 30s) | p95 < 200ms, 0 errors |
-
-## Run All Tests
+Conservative parameters tuned for local Docker (Puma single mode, 3 threads).
+Validates **correctness** — not scale.
 
 ```bash
 cd load-tests
-./run-all.sh
+./run-dev.sh
 ```
+
+| Test | VUs | Iterations | Validates |
+|------|-----|-----------|-----------|
+| concurrency | 5 | 5 | Exactly 1 booking under concurrent load |
+| idempotency | 3 | 10 | Same key never creates duplicates |
+| rate-limiting | 1 | 15 | Burst triggers 429 |
+| multi-tenant | 3 | 10 | Cross-org access rejected |
+| booking-flow | 10 | 20s | Full flow p95 < 1000ms |
+
+## Production Profile (Real Infrastructure)
+
+Aggressive parameters for multi-worker Puma on ECS/production.
+Validates **performance + correctness** under sustained load.
+
+```bash
+# Against local (default)
+./run-production.sh
+
+# Against deployed environment
+BASE_URL=https://api.example.com/api/v1 ./run-production.sh
+```
+
+| Test | VUs | Iterations | Validates |
+|------|-----|-----------|-----------|
+| concurrency | 100 | 100 | Lock correctness at scale |
+| idempotency | 50 | 500 | Deduplication under heavy load |
+| rate-limiting | 1 | 30 | Throttle triggers reliably |
+| multi-tenant | 20 | 100 | Isolation at scale |
+| booking-flow | 200 | 60s | p95 < 200ms, <5% error rate |
 
 ## Run Individual Tests
 
 ```bash
-k6 run concurrency.js
-k6 run idempotency.js
-k6 run rate-limiting.js
-k6 run multi-tenant.js
-k6 run load-booking-flow.js
+# Dev profile
+k6 run dev/concurrency.js
+k6 run dev/idempotency.js
+k6 run dev/rate-limiting.js
+k6 run dev/multi-tenant.js
+k6 run dev/booking-flow.js
+
+# Production profile (with custom base URL)
+k6 run -e BASE_URL=https://api.example.com/api/v1 production/concurrency.js
+```
+
+## Directory Structure
+
+```
+load-tests/
+├── README.md              # This file
+├── helpers.js             # Shared utilities (both profiles import from here)
+├── dev/                   # Local Docker Desktop — conservative
+│   ├── concurrency.js
+│   ├── idempotency.js
+│   ├── rate-limiting.js
+│   ├── multi-tenant.js
+│   └── booking-flow.js
+├── production/            # Real infra — aggressive
+│   ├── concurrency.js
+│   ├── idempotency.js
+│   ├── rate-limiting.js
+│   ├── multi-tenant.js
+│   └── booking-flow.js
+├── run-dev.sh             # Runs dev suite
+└── run-production.sh      # Runs production suite
 ```
