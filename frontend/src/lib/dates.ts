@@ -1,20 +1,13 @@
 import { format, parseISO } from 'date-fns'
-import { toZonedTime } from 'date-fns-tz'
 
-export function formatSlotTime(isoString: string, timezone?: string): string {
-  const date = parseISO(isoString)
-  const zoned = timezone ? toZonedTime(date, timezone) : date
-  return format(zoned, 'h:mm a')
+export function formatSlotTime(isoString: string): string {
+  return format(parseISO(isoString), 'h:mm a')
 }
 
-export function formatSlotDate(isoString: string, timezone?: string): string {
-  const date = parseISO(isoString)
-  const zoned = timezone ? toZonedTime(date, timezone) : date
-  return format(zoned, 'EEE, MMM d')
+export function formatSlotDate(isoString: string): string {
+  return format(parseISO(isoString), 'EEEE, MMM d')
 }
 
-export function formatFullDateTime(isoString: string, timezone?: string): string {
-  const date = parseISO(isoString)
-  const zoned = timezone ? toZonedTime(date, timezone) : date
-  return format(zoned, 'MMM d, yyyy h:mm a')
+export function formatSessionDate(isoString: string): string {
+  return format(parseISO(isoString), 'MMM d, yyyy · h:mm a')
 }

@@ -1,4 +1,4 @@
-import { apiClient } from './client'
+import apiClient from './client'
 import type { Booking, PaginatedResponse } from './types'
 
 export async function getMySessions(page = 1): Promise<PaginatedResponse<Booking>> {

@@ -1,5 +1,14 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
-import { BrowserRouter, Routes, Route } from 'react-router-dom'
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
+import { AuthProvider } from './context/AuthContext'
+import { ToastProvider } from './context/ToastContext'
+import { ToastContainer } from './components/ui/Toast'
+import { useAuth } from './hooks/useAuth'
+import { SelectOrgPage } from './pages/SelectOrgPage'
+import { MentorsPage } from './pages/MentorsPage'
+import { MentorSlotsPage } from './pages/MentorSlotsPage'
+import { MySessionsPage } from './pages/MySessionsPage'
+import type { ReactNode } from 'react'
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -11,19 +20,73 @@ const queryClient = new QueryClient({
   },
 })
 
+function RequireAuth({ children }: { children: ReactNode }) {
+  const { isAuthenticated } = useAuth()
+  if (!isAuthenticated) {
+    return <Navigate to="/" replace />
+  }
+  return <>{children}</>
+}
+
+function RedirectIfAuth({ children }: { children: ReactNode }) {
+  const { isAuthenticated } = useAuth()
+  if (isAuthenticated) {
+    return <Navigate to="/mentors" replace />
+  }
+  return <>{children}</>
+}
+
+function AppRoutes() {
+  return (
+    <Routes>
+      <Route
+        path="/"
+        element={
+          <RedirectIfAuth>
+            <SelectOrgPage />
+          </RedirectIfAuth>
+        }
+      />
+      <Route
+        path="/mentors"
+        element={
+          <RequireAuth>
+            <MentorsPage />
+          </RequireAuth>
+        }
+      />
+      <Route
+        path="/mentors/:id/slots"
+        element={
+          <RequireAuth>
+            <MentorSlotsPage />
+          </RequireAuth>
+        }
+      />
+      <Route
+        path="/sessions"
+        element={
+          <RequireAuth>
+            <MySessionsPage />
+          </RequireAuth>
+        }
+      />
+      <Route path="*" element={<Navigate to="/" replace />} />
+    </Routes>
+  )
+}
+
 function App() {
   return (
     <QueryClientProvider client={queryClient}>
-      <BrowserRouter>
-        <div className="min-h-screen bg-surface font-sans">
-          <Routes>
-            <Route path="/" element={<div className="p-8 text-text">Select Organization</div>} />
-            <Route path="/mentors" element={<div className="p-8 text-text">Mentors</div>} />
-            <Route path="/mentors/:id/slots" element={<div className="p-8 text-text">Slots</div>} />
-            <Route path="/sessions" element={<div className="p-8 text-text">My Sessions</div>} />
-          </Routes>
-        </div>
-      </BrowserRouter>
+      <AuthProvider>
+        <ToastProvider>
+          <BrowserRouter>
+            <AppRoutes />
+            <ToastContainer />
+          </BrowserRouter>
+        </ToastProvider>
+      </AuthProvider>
     </QueryClientProvider>
   )
 }

@@ -1,5 +1,5 @@
 import { useQuery } from '@tanstack/react-query'
-import { apiClient } from '../api/client'
+import apiClient from '../api/client'
 import { QUERY_KEYS, STALE_TIMES } from '../lib/constants'
 import type { Slot } from '../api/types'
 
@@ -7,7 +7,7 @@ async function getMentorSlots(mentorId: string, startDate: string, endDate: stri
   const { data } = await apiClient.get(`/mentors/${mentorId}/slots`, {
     params: { start_date: startDate, end_date: endDate },
   })
-  return data
+  return data.data ?? data
 }
 
 export function useSlots(mentorId: string, startDate: string, endDate: string) {
@@ -16,5 +16,6 @@ export function useSlots(mentorId: string, startDate: string, endDate: string) {
     queryFn: () => getMentorSlots(mentorId, startDate, endDate),
     staleTime: STALE_TIMES.slots,
     enabled: !!mentorId,
+    refetchInterval: 60_000,
   })
 }

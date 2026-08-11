@@ -5,8 +5,10 @@ interface CardProps extends HTMLAttributes<HTMLDivElement> {
 }
 
 export function Card({ children, hover = false, className = '', ...props }: CardProps) {
-  const base = 'rounded-xl border border-surface-border bg-surface-card p-6'
-  const hoverClass = hover ? 'hover:bg-surface-hover transition-colors cursor-pointer' : ''
+  const base = 'rounded-lg border border-surface-border bg-surface-card p-6 shadow-sm'
+  const hoverClass = hover
+    ? 'hover:border-primary/50 hover:shadow-md hover:shadow-primary/5 transition-all duration-200 cursor-pointer'
+    : ''
 
   return (
     <div className={`${base} ${hoverClass} ${className}`} {...props}>

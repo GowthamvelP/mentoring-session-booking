@@ -1,37 +1,66 @@
-import { createContext, useState, useCallback } from 'react'
+import { createContext, useState, useCallback, useEffect } from 'react'
 import type { ReactNode } from 'react'
 import type { Organization } from '../api/types'
-import { apiClient } from '../api/client'
 
 interface AuthState {
   organization: Organization | null
   userId: string | null
+  userName: string | null
 }
 
 interface AuthContextValue extends AuthState {
-  selectOrganization: (org: Organization, userId: string) => void
+  selectOrganization: (org: Organization, userId: string, userName?: string) => void
   clearAuth: () => void
+  isAuthenticated: boolean
 }
 
 export const AuthContext = createContext<AuthContextValue | null>(null)
 
-export function AuthProvider({ children }: { children: ReactNode }) {
-  const [auth, setAuth] = useState<AuthState>({ organization: null, userId: null })
+function loadPersistedAuth(): AuthState {
+  try {
+    const orgData = localStorage.getItem('organization')
+    const userId = localStorage.getItem('userId')
+    const userName = localStorage.getItem('userName')
+    return {
+      organization: orgData ? JSON.parse(orgData) : null,
+      userId,
+      userName,
+    }
+  } catch {
+    return { organization: null, userId: null, userName: null }
+  }
+}
 
-  const selectOrganization = useCallback((org: Organization, userId: string) => {
-    setAuth({ organization: org, userId })
-    apiClient.defaults.headers.common['X-Org-Id'] = org.id
-    apiClient.defaults.headers.common['X-User-Id'] = userId
+export function AuthProvider({ children }: { children: ReactNode }) {
+  const [auth, setAuth] = useState<AuthState>(loadPersistedAuth)
+
+  useEffect(() => {
+    if (auth.organization) {
+      localStorage.setItem('organization', JSON.stringify(auth.organization))
+      localStorage.setItem('orgId', auth.organization.id)
+    }
+    if (auth.userId) {
+      localStorage.setItem('userId', auth.userId)
+    }
+    if (auth.userName) {
+      localStorage.setItem('userName', auth.userName)
+    }
+  }, [auth])
+
+  const selectOrganization = useCallback((org: Organization, userId: string, userName?: string) => {
+    setAuth({ organization: org, userId, userName: userName || null })
   }, [])
 
   const clearAuth = useCallback(() => {
-    setAuth({ organization: null, userId: null })
-    delete apiClient.defaults.headers.common['X-Org-Id']
-    delete apiClient.defaults.headers.common['X-User-Id']
+    setAuth({ organization: null, userId: null, userName: null })
+    localStorage.removeItem('organization')
+    localStorage.removeItem('orgId')
+    localStorage.removeItem('userId')
+    localStorage.removeItem('userName')
   }, [])
 
   return (
-    <AuthContext.Provider value={{ ...auth, selectOrganization, clearAuth }}>
+    <AuthContext.Provider value={{ ...auth, selectOrganization, clearAuth, isAuthenticated: !!auth.userId && !!auth.organization }}>
       {children}
     </AuthContext.Provider>
   )
