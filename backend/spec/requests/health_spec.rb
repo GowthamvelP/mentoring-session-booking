@@ -32,5 +32,35 @@ RSpec.describe "Health API", type: :request do
       expect(json["checks"]).to have_key("redis")
       expect(json["checks"]).to have_key("sidekiq")
     end
+
+    it "returns 503 with degraded status when database is down" do
+      allow(ActiveRecord::Base.connection).to receive(:execute).and_raise(StandardError.new("connection refused"))
+      get "/api/v1/health"
+
+      expect(response).to have_http_status(:service_unavailable)
+      json = JSON.parse(response.body)
+      expect(json["status"]).to eq("degraded")
+      expect(json["checks"]["database"]["status"]).to eq("disconnected")
+    end
+
+    it "returns 503 with degraded status when Redis is down" do
+      allow_any_instance_of(Redis).to receive(:ping).and_raise(StandardError.new("connection refused"))
+      get "/api/v1/health"
+
+      expect(response).to have_http_status(:service_unavailable)
+      json = JSON.parse(response.body)
+      expect(json["status"]).to eq("degraded")
+      expect(json["checks"]["redis"]["status"]).to eq("disconnected")
+    end
+
+    it "returns 503 with degraded status when Sidekiq is down" do
+      allow(Sidekiq::ProcessSet).to receive(:new).and_raise(StandardError.new("connection refused"))
+      get "/api/v1/health"
+
+      expect(response).to have_http_status(:service_unavailable)
+      json = JSON.parse(response.body)
+      expect(json["status"]).to eq("degraded")
+      expect(json["checks"]["sidekiq"]["status"]).to eq("disconnected")
+    end
   end
 end
