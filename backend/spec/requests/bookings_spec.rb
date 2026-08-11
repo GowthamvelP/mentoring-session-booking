@@ -123,5 +123,15 @@ RSpec.describe "Bookings API", type: :request do
       post "/api/v1/bookings/#{booking.id}/reschedule", params: { new_slot_id: target_slot.id }
       expect(response).to have_http_status(:unauthorized)
     end
+
+    it "stores timezone on rescheduled booking" do
+      post "/api/v1/bookings/#{booking.id}/reschedule",
+           params: { new_slot_id: target_slot.id, timezone: "Asia/Tokyo" },
+           headers: headers
+
+      expect(response).to have_http_status(:created)
+      json = JSON.parse(response.body)
+      expect(json["data"]["booked_timezone"]).to eq("Asia/Tokyo")
+    end
   end
 end

@@ -45,7 +45,8 @@ module Api
         result = RescheduleService.call(
           booking: booking,
           new_slot_id: params[:new_slot_id],
-          user: current_user
+          user: current_user,
+          timezone: params[:timezone]
         )
 
         if result[:success]

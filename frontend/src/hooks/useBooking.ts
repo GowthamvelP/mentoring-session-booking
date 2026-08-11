@@ -55,12 +55,12 @@ export function useCancelBooking() {
   })
 }
 
-export function useRescheduleBooking() {
+export function useRescheduleBooking(timezone?: string) {
   const queryClient = useQueryClient()
 
   return useMutation({
     mutationFn: ({ bookingId, newSlotId }: { bookingId: string; newSlotId: string }) =>
-      rescheduleBooking(bookingId, newSlotId),
+      rescheduleBooking(bookingId, newSlotId, timezone),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: QUERY_KEYS.sessions })
     },

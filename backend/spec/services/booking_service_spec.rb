@@ -88,5 +88,28 @@ RSpec.describe BookingService, type: :service do
         expect(result[:status]).to eq(:not_found)
       end
     end
+
+    context "timezone storage" do
+      it "stores provided timezone on booking" do
+        result = described_class.call(
+          slot_id: slot.id, member: member,
+          idempotency_key: SecureRandom.uuid,
+          timezone: "Europe/London"
+        )
+
+        expect(result[:success]).to be true
+        expect(result[:booking].booked_timezone).to eq("Europe/London")
+      end
+
+      it "defaults to org timezone when none provided" do
+        result = described_class.call(
+          slot_id: slot.id, member: member,
+          idempotency_key: SecureRandom.uuid
+        )
+
+        expect(result[:success]).to be true
+        expect(result[:booking].booked_timezone).to eq(organization.timezone)
+      end
+    end
   end
 end

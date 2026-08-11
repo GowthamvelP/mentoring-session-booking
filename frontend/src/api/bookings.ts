@@ -15,9 +15,10 @@ export async function cancelBooking(bookingId: string): Promise<Booking> {
   return data.data ?? data
 }
 
-export async function rescheduleBooking(bookingId: string, newSlotId: string): Promise<Booking> {
+export async function rescheduleBooking(bookingId: string, newSlotId: string, timezone?: string): Promise<Booking> {
   const { data } = await apiClient.post(`/bookings/${bookingId}/reschedule`, {
     new_slot_id: newSlotId,
+    timezone: timezone,
   })
   return data.data ?? data
 }

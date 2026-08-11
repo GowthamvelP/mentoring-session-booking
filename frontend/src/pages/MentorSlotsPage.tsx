@@ -40,7 +40,7 @@ export function MentorSlotsPage() {
   const { data: slots, isLoading, isError, refetch } = useSlots(mentorId || '', startDate, endDate)
 
   const bookMutation = useCreateBooking(mentorId, timezone)
-  const rescheduleMutation = useRescheduleBooking()
+  const rescheduleMutation = useRescheduleBooking(timezone)
 
   const handleBookSlot = useCallback(
     (slot: Slot) => {

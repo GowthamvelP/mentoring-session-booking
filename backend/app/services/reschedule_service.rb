@@ -12,14 +12,15 @@
 #   result[:booking]     # => New booking (on success)
 #   result[:old_booking] # => Cancelled original (on success)
 class RescheduleService
-  def self.call(booking:, new_slot_id:, user:)
-    new(booking: booking, new_slot_id: new_slot_id, user: user).call
+  def self.call(booking:, new_slot_id:, user:, timezone: nil)
+    new(booking: booking, new_slot_id: new_slot_id, user: user, timezone: timezone).call
   end
 
-  def initialize(booking:, new_slot_id:, user:)
+  def initialize(booking:, new_slot_id:, user:, timezone: nil)
     @booking = booking
     @new_slot_id = new_slot_id
     @user = user
+    @timezone = timezone
   end
 
   def call
@@ -62,7 +63,8 @@ class RescheduleService
         organization: ActsAsTenant.current_tenant,
         idempotency_key: SecureRandom.uuid,
         status: :confirmed,
-        booked_at: Time.current
+        booked_at: Time.current,
+        booked_timezone: @timezone || @booking.booked_timezone || ActsAsTenant.current_tenant&.timezone || "UTC"
       )
     end
 

@@ -100,5 +100,25 @@ RSpec.describe RescheduleService, type: :service do
         expect(result[:status]).to eq(:not_found)
       end
     end
+
+    context "timezone handling" do
+      it "stores provided timezone on new booking" do
+        result = described_class.call(
+          booking: booking, new_slot_id: new_slot.id, user: member,
+          timezone: "Asia/Kolkata"
+        )
+
+        expect(result[:success]).to be true
+        expect(result[:booking].booked_timezone).to eq("Asia/Kolkata")
+      end
+
+      it "inherits original booking timezone when none provided" do
+        booking.update!(booked_timezone: "America/New_York")
+        result = described_class.call(booking: booking, new_slot_id: new_slot.id, user: member)
+
+        expect(result[:success]).to be true
+        expect(result[:booking].booked_timezone).to eq("America/New_York")
+      end
+    end
   end
 end
