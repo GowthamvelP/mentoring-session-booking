@@ -47,7 +47,7 @@ gem 'pagy'
 gem 'rack-cors'
 gem 'redis', '~> 5.0'
 gem 'dotenv-rails'
-gem 'connection_pool'
+gem 'connection_pool', '~> 2.4'
 
 group :development, :test do
   gem 'debug', platforms: %i[mri windows], require: 'debug/prelude'
