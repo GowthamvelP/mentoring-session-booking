@@ -1,83 +1,90 @@
-import { parseISO } from 'date-fns'
-import { toZonedTime, format as formatTz } from 'date-fns-tz'
-
 /**
- * Get the effective timezone for display:
- * 1. User's explicit timezone preference (if set)
- * 2. Browser's detected timezone (Intl API)
- * 3. Organization's default timezone (fallback)
+ * Get the calendar date (yyyy-MM-dd) for a UTC ISO string in a specific timezone.
+ * Uses native Intl API — always correct regardless of browser timezone.
  */
-export function getEffectiveTimezone(userTimezone?: string | null, orgTimezone?: string): string {
-  if (userTimezone) return userTimezone
-
-  // Detect browser's local timezone
-  try {
-    const detected = Intl.DateTimeFormat().resolvedOptions().timeZone
-    if (detected) return detected
-  } catch {
-    // Fallback if Intl API not available
-  }
-
-  return orgTimezone || 'UTC'
+export function getDateInTimezone(utcIsoString: string, timezone: string): string {
+  const date = new Date(utcIsoString)
+  return new Intl.DateTimeFormat('en-CA', { timeZone: timezone }).format(date)
 }
 
 /**
- * Format a UTC ISO timestamp for display in the user's timezone.
- * Handles DST transitions automatically via date-fns-tz.
+ * Get the display date header (e.g., "THURSDAY, AUG 13") for a UTC timestamp.
+ */
+export function formatDateHeader(utcIsoString: string, timezone: string): string {
+  const date = new Date(utcIsoString)
+  return new Intl.DateTimeFormat('en-US', {
+    timeZone: timezone,
+    weekday: 'long',
+    month: 'short',
+    day: 'numeric',
+  }).format(date).toUpperCase()
+}
+
+/**
+ * Format a UTC ISO timestamp for time display (e.g., "11:00 AM").
  */
 export function formatSlotTime(utcIsoString: string, timezone: string): string {
-  const date = parseISO(utcIsoString)
-  const zonedDate = toZonedTime(date, timezone)
-  return formatTz(zonedDate, 'h:mm a', { timeZone: timezone })
+  const date = new Date(utcIsoString)
+  return new Intl.DateTimeFormat('en-US', {
+    timeZone: timezone,
+    hour: 'numeric',
+    minute: '2-digit',
+    hour12: true,
+  }).format(date)
 }
 
 /**
- * Format a UTC ISO timestamp as a full date for display.
- */
-export function formatSlotDate(utcIsoString: string, timezone: string): string {
-  const date = parseISO(utcIsoString)
-  const zonedDate = toZonedTime(date, timezone)
-  return formatTz(zonedDate, 'EEE, MMM d', { timeZone: timezone })
-}
-
-/**
- * Format a UTC ISO timestamp as full date + time.
+ * Format a UTC ISO timestamp as full date + time (e.g., "Aug 13, 2026, 11:00 AM").
  */
 export function formatSlotDateTime(utcIsoString: string, timezone: string): string {
-  const date = parseISO(utcIsoString)
-  const zonedDate = toZonedTime(date, timezone)
-  return formatTz(zonedDate, 'MMM d, yyyy · h:mm a', { timeZone: timezone })
+  const date = new Date(utcIsoString)
+  return new Intl.DateTimeFormat('en-US', {
+    timeZone: timezone,
+    month: 'short',
+    day: 'numeric',
+    year: 'numeric',
+    hour: 'numeric',
+    minute: '2-digit',
+    hour12: true,
+  }).format(date)
 }
 
 /**
- * Format a date range (start - end) for a slot.
+ * Format a date range (e.g., "11:00 AM – 12:00 PM").
  */
 export function formatSlotRange(startUtc: string, endUtc: string, timezone: string): string {
-  const start = formatSlotTime(startUtc, timezone)
-  const end_ = formatSlotTime(endUtc, timezone)
-  return `${start} – ${end_}`
+  return `${formatSlotTime(startUtc, timezone)} – ${formatSlotTime(endUtc, timezone)}`
 }
 
 /**
- * Get the timezone abbreviation (e.g., "EST", "EDT", "IST")
+ * Get the timezone abbreviation (e.g., "EST", "CDT", "IST").
  */
 export function getTimezoneAbbreviation(timezone: string): string {
   try {
-    const date = new Date()
-    const formatter = new Intl.DateTimeFormat('en-US', {
+    const parts = new Intl.DateTimeFormat('en-US', {
       timeZone: timezone,
       timeZoneName: 'short',
-    })
-    const parts = formatter.formatToParts(date)
-    const tzPart = parts.find(p => p.type === 'timeZoneName')
-    return tzPart?.value || timezone
+    }).formatToParts(new Date())
+    return parts.find(p => p.type === 'timeZoneName')?.value || timezone
   } catch {
     return timezone
   }
 }
 
 /**
- * Get browser's detected timezone
+ * Get the effective timezone: user preference > browser detected > org default.
+ */
+export function getEffectiveTimezone(userTimezone?: string | null, orgTimezone?: string): string {
+  if (userTimezone) return userTimezone
+  try {
+    return Intl.DateTimeFormat().resolvedOptions().timeZone
+  } catch {
+    return orgTimezone || 'UTC'
+  }
+}
+
+/**
+ * Get browser's detected timezone.
  */
 export function getBrowserTimezone(): string {
   try {

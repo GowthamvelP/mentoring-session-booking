@@ -1,8 +1,7 @@
 import { useMemo } from 'react'
-import { parseISO } from 'date-fns'
-import { toZonedTime, format as formatTz } from 'date-fns-tz'
 import type { Slot } from '../../api/types'
 import { SlotButton } from './SlotButton'
+import { getDateInTimezone, formatDateHeader } from '../../lib/dates'
 
 interface SlotGridProps {
   slots: Slot[]
@@ -17,14 +16,12 @@ export function SlotGrid({ slots, onSlotClick, bookingSlotId, timezone }: SlotGr
     const available = slots.filter((s) => s.status === 'available')
 
     for (const slot of available) {
-      // Group by date in the user's selected timezone
-      const zonedDate = toZonedTime(parseISO(slot.start_time), timezone)
-      const date = formatTz(zonedDate, 'yyyy-MM-dd', { timeZone: timezone })
-      if (!groups[date]) groups[date] = []
-      groups[date].push(slot)
+      // Use Intl-based date key — always correct regardless of browser TZ
+      const dateKey = getDateInTimezone(slot.start_time, timezone)
+      if (!groups[dateKey]) groups[dateKey] = []
+      groups[dateKey].push(slot)
     }
 
-    // Sort each group by start_time
     for (const date of Object.keys(groups)) {
       groups[date].sort(
         (a, b) => new Date(a.start_time).getTime() - new Date(b.start_time).getTime()
@@ -45,10 +42,10 @@ export function SlotGrid({ slots, onSlotClick, bookingSlotId, timezone }: SlotGr
 
   return (
     <div className="space-y-6">
-      {groupedSlots.map(([date, daySlots]) => (
-        <div key={date}>
+      {groupedSlots.map(([_dateKey, daySlots]) => (
+        <div key={_dateKey}>
           <h3 className="mb-3 text-sm font-semibold text-text-muted uppercase tracking-wide">
-            {formatTz(toZonedTime(parseISO(date), timezone), 'EEEE, MMM d', { timeZone: timezone })}
+            {formatDateHeader(daySlots[0].start_time, timezone)}
           </h3>
           <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">
             {daySlots.map((slot) => (
