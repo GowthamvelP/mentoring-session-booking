@@ -28,6 +28,12 @@ class BookingService
     existing = Booking.find_by(idempotency_key: @idempotency_key)
     return { success: true, booking: existing, existing: true } if existing
 
+    # 1.5. Per-member booking limit check
+    max_bookings = ActsAsTenant.current_tenant&.max_active_bookings
+    if max_bookings && @member.bookings.active.count >= max_bookings
+      return { success: false, error: "Booking limit reached (maximum #{max_bookings} active sessions)", status: :unprocessable_entity }
+    end
+
     # 2. Pessimistic lock + atomic booking
     booking = nil
 

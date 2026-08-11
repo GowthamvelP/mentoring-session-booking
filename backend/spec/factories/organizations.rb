@@ -7,5 +7,9 @@ FactoryBot.define do
       name { "Pacific Inc" }
       timezone { "America/Los_Angeles" }
     end
+
+    trait :with_booking_limit do
+      max_active_bookings { 3 }
+    end
   end
 end
