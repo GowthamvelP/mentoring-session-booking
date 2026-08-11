@@ -1,9 +1,9 @@
 import { memo } from 'react'
-import { format, parseISO } from 'date-fns'
 import type { Booking } from '../../api/types'
 import { Card } from '../ui/Card'
 import { Badge } from '../ui/Badge'
 import { Button } from '../ui/Button'
+import { formatSlotDateTime, formatSlotTime, getTimezoneAbbreviation } from '../../lib/dates'
 
 interface SessionCardProps {
   booking: Booking
@@ -25,9 +25,13 @@ export const SessionCard = memo(function SessionCard({
   isActioning = false,
 }: SessionCardProps) {
   const config = statusConfig[booking.status]
-  const startTime = format(parseISO(booking.slot.start_time), 'MMM d, yyyy · h:mm a')
-  const endTime = format(parseISO(booking.slot.end_time), 'h:mm a')
   const mentorName = booking.mentor?.name || 'Mentor'
+
+  // Use the timezone that was active when the booking was made
+  const displayTz = booking.booked_timezone || Intl.DateTimeFormat().resolvedOptions().timeZone
+  const startTime = formatSlotDateTime(booking.slot.start_time, displayTz)
+  const endTime = formatSlotTime(booking.slot.end_time, displayTz)
+  const tzAbbr = getTimezoneAbbreviation(displayTz)
 
   return (
     <Card className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
@@ -42,6 +46,7 @@ export const SessionCard = memo(function SessionCard({
           </div>
           <p className="mt-1 text-sm text-text-muted">
             {startTime} – {endTime}
+            <span className="ml-1.5 text-xs text-text-dim">({tzAbbr})</span>
           </p>
           {booking.member && (
             <p className="mt-0.5 text-xs text-text-dim">Member: {booking.member.name}</p>

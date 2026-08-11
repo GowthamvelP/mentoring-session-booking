@@ -25,6 +25,7 @@ export interface Booking {
   status: 'confirmed' | 'cancelled' | 'completed'
   booked_at: string
   cancelled_at: string | null
+  booked_timezone?: string | null
   slot: {
     id: string
     start_time: string
