@@ -1,4 +1,5 @@
 import { useMemo } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { isFuture, parseISO } from 'date-fns'
 import { useMySessions } from '../hooks/useSessions'
 import { useCancelBooking } from '../hooks/useBooking'
@@ -11,6 +12,7 @@ import { EmptyState } from '../components/ui/EmptyState'
 import { ErrorState } from '../components/ui/ErrorState'
 
 export function MySessionsPage() {
+  const navigate = useNavigate()
   const { data, isLoading, isError, refetch } = useMySessions()
   const cancelMutation = useCancelBooking()
   const { showToast } = useToast()
@@ -32,6 +34,13 @@ export function MySessionsPage() {
       onSuccess: () => showToast('Session cancelled', 'success'),
       onError: () => showToast('Failed to cancel session', 'error'),
     })
+  }
+
+  const handleReschedule = (bookingId: string) => {
+    const booking = data?.data.find((b) => b.id === bookingId)
+    if (booking?.mentor?.id) {
+      navigate(`/mentors/${booking.mentor.id}/slots`)
+    }
   }
 
   return (
@@ -76,6 +85,7 @@ export function MySessionsPage() {
               <SessionList
                 bookings={upcoming}
                 onCancel={handleCancel}
+                onReschedule={handleReschedule}
                 actioningId={cancelMutation.isPending ? cancelMutation.variables : null}
               />
             </section>

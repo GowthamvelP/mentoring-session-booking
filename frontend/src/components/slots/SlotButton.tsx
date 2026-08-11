@@ -24,7 +24,7 @@ export const SlotButton = memo(function SlotButton({ slot, onClick, disabled = f
           ? 'border-surface-border/50 bg-surface-hover/40 text-text-dim cursor-not-allowed opacity-60'
           : loading
             ? 'border-primary bg-primary/10 text-primary-light cursor-wait'
-            : 'border-surface-border bg-surface-card text-text hover:border-primary hover:bg-primary/10 hover:text-primary-light hover:shadow-sm active:scale-[0.98]'
+            : 'border-surface-border bg-surface-card text-text cursor-pointer hover:border-primary hover:bg-primary/10 hover:text-primary-light hover:shadow-sm active:scale-[0.98]'
         }
         disabled:cursor-not-allowed
       `}
