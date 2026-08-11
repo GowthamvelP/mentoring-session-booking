@@ -18,6 +18,19 @@ module Api
           }
         end
 
+        # PATCH /api/v1/me/timezone
+        def update_timezone
+          timezone = params[:timezone]
+
+          unless timezone.present? && Time.find_zone(timezone)
+            return render_error("Invalid timezone", status: :unprocessable_entity,
+                               details: { timezone: "Must be a valid IANA timezone (e.g., 'America/New_York')" })
+          end
+
+          current_user.update!(timezone: timezone)
+          render json: { timezone: current_user.timezone, message: "Timezone updated" }
+        end
+
         # GET /api/v1/me/mentor_sessions — mentor's sessions
         def mentor_sessions
           unless current_user.mentor?

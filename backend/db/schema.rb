@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_08_11_120006) do
+ActiveRecord::Schema[8.1].define(version: 2026_08_11_120009) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
   enable_extension "pgcrypto"
@@ -42,12 +42,14 @@ ActiveRecord::Schema[8.1].define(version: 2026_08_11_120006) do
 
   create_table "organizations", id: :uuid, default: -> { "gen_random_uuid()" }, force: :cascade do |t|
     t.datetime "created_at", null: false
+    t.integer "max_active_bookings", default: 5
     t.string "name", null: false
     t.string "timezone", default: "UTC", null: false
     t.datetime "updated_at", null: false
   end
 
   create_table "slots", id: :uuid, default: -> { "gen_random_uuid()" }, force: :cascade do |t|
+    t.integer "buffer_minutes", default: 15
     t.datetime "created_at", null: false
     t.datetime "end_time", null: false
     t.uuid "mentor_id", null: false
@@ -69,6 +71,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_08_11_120006) do
     t.uuid "organization_id", null: false
     t.string "password_digest"
     t.string "role", default: "member", null: false
+    t.string "timezone"
     t.datetime "updated_at", null: false
     t.index ["organization_id", "email"], name: "index_users_on_organization_id_and_email", unique: true
     t.index ["organization_id"], name: "index_users_on_organization_id"

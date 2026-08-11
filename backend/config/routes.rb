@@ -34,6 +34,7 @@ Rails.application.routes.draw do
       namespace :me do
         get "sessions", to: "sessions#index"
         get "mentor_sessions", to: "sessions#mentor_sessions"
+        patch "timezone", to: "sessions#update_timezone"
       end
     end
   end

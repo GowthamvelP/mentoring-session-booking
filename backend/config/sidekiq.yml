@@ -1,5 +1,21 @@
----
-:concurrency: 5
+# Sidekiq configuration
+# Queue priority: higher weight = processed more frequently
+# Production: tune concurrency based on available RAM (each thread ~50MB)
+
+:concurrency: <%= ENV.fetch('SIDEKIQ_CONCURRENCY', 10) %>
+:timeout: 25  # seconds to wait for job completion on shutdown
+
 :queues:
-  - [default, 5]
-  - [mailers, 3]
+  - [critical, 6]      # Booking confirmations, cancellations (user-facing)
+  - [default, 3]       # Standard background processing
+  - [notifications, 2] # Email/push notifications (can tolerate delay)
+  - [low, 1]           # Analytics, cleanup, non-urgent tasks
+
+# Retry configuration
+:max_retries: 5
+
+# Scheduled jobs poll interval
+:poll_interval_average: 2
+
+# Production settings
+:strict: false  # Allow jobs to run on any queue if their queue is not listed

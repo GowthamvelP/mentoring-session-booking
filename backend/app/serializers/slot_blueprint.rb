@@ -2,6 +2,11 @@
 
 # Serializer for slot data.
 # All times in ISO 8601 UTC format.
+#
+# The API always returns UTC. Frontend handles display conversion using:
+# - User's explicit timezone (if set)
+# - Browser's detected timezone (Intl.DateTimeFormat().resolvedOptions().timeZone)
+# - Organization's default timezone (fallback)
 class SlotBlueprint < Blueprinter::Base
   identifier :id
 
