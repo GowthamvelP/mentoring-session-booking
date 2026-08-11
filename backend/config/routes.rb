@@ -15,6 +15,7 @@ Rails.application.routes.draw do
     namespace :v1 do
       # Public endpoints (no auth required)
       resources :organizations, only: [:index]
+      get "organizations/:organization_id/users", to: "organizations#users"
       post "auth/select-org", to: "auth#select_org"
       get "health", to: "health#show"
 
