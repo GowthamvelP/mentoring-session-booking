@@ -203,24 +203,122 @@ Tenantable
   # Ensures all queries scoped to org
 ```
 
-### Frontend Components
+### Frontend Architecture (React 18 + TypeScript + TanStack Query)
+
+#### Project Structure
 
 ```
 src/
-├── api/           # API client (axios + interceptors)
-├── hooks/         # TanStack Query hooks (useMentors, useSlots, useBooking)
-├── components/    # Reusable UI components
-│   ├── MentorCard.tsx
-│   ├── SlotGrid.tsx
-│   ├── SessionList.tsx
-│   └── shared/ (Button, Toast, Skeleton, ErrorState, EmptyState)
+├── api/
+│   ├── client.ts          # Axios instance, interceptors, error transform
+│   ├── types.ts           # Shared API response/request types
+│   ├── mentors.ts         # getMentors, getMentorSlots
+│   ├── bookings.ts        # createBooking, cancelBooking, rescheduleBooking
+│   └── sessions.ts        # getMySessions, getMyMentorSessions
+├── hooks/
+│   ├── useMentors.ts      # useQuery + pagination
+│   ├── useSlots.ts        # useQuery with staleTime for slot freshness
+│   ├── useBooking.ts      # useMutation with optimistic update + rollback
+│   ├── useSessions.ts     # useQuery for session lists
+│   └── useAuth.ts         # org/user context management
+├── components/
+│   ├── ui/                # Primitives: Button, Card, Badge, Skeleton, Toast, EmptyState, ErrorState
+│   ├── layout/            # AppShell, Navbar, PageHeader
+│   ├── mentors/           # MentorCard, MentorGrid
+│   ├── slots/             # SlotGrid, SlotButton, WeekNavigation
+│   └── sessions/          # SessionCard, SessionList
 ├── pages/
 │   ├── MentorsPage.tsx
 │   ├── MentorSlotsPage.tsx
-│   └── MySessionsPage.tsx
-├── context/       # OrgContext (selected organization)
-└── lib/           # Utilities (idempotency key generation, date formatting)
+│   ├── MySessionsPage.tsx
+│   └── SelectOrgPage.tsx
+├── context/
+│   └── AuthContext.tsx    # Org + User state, header injection
+├── lib/
+│   ├── idempotency.ts    # UUID v4 key generation
+│   ├── dates.ts          # Timezone-aware formatting (date-fns + org timezone)
+│   └── constants.ts      # API URLs, stale times, query keys
+└── App.tsx                # Router + QueryProvider + ErrorBoundary
 ```
+
+#### Frontend Design Patterns
+
+| Pattern | Implementation | Why |
+|---------|---------------|-----|
+| **Typed API client** | Axios instance with typed response/error interfaces, interceptors for auth headers and error transform | API contract discipline — frontend knows exactly what backend returns |
+| **Custom hooks** | Each feature gets a hook (useBooking, useSlots) encapsulating query + mutation + error handling | Separation of data logic from presentation; reusable across components |
+| **Optimistic updates with rollback** | `onMutate` → update cache → `onError` → restore previous → `onSettled` → refetch | User sees instant feedback; graceful recovery on failure |
+| **Composable UI primitives** | Shared Button, Card, Badge, Skeleton components with variant props | DRY, consistent visual language, accessibility baked in once |
+| **Mutually exclusive states** | Each page renders exactly one of: loading, error, empty, or content | No flickering between states; clear user feedback |
+| **Error boundaries** | Global ErrorBoundary wraps router; per-route error handling via TanStack Query | Prevents white screen on unexpected errors |
+| **Memoization (targeted)** | `React.memo` on list items (MentorCard, SlotButton); `useCallback` for handlers passed as props | Prevents unnecessary re-renders in lists without premature optimization |
+| **Accessibility** | Semantic HTML (`button`, `nav`, `main`), ARIA labels on interactive elements, keyboard navigation, focus management after mutations | Inclusive UX; demonstrates full-stack awareness |
+
+#### Data Flow Architecture
+
+```
+┌──────────────────────────────────────────────────────┐
+│                     App.tsx                           │
+│  QueryClientProvider + AuthContext + ErrorBoundary    │
+└────────────────────────┬─────────────────────────────┘
+                         │
+┌────────────────────────▼─────────────────────────────┐
+│                   React Router                        │
+│  /mentors → MentorsPage                              │
+│  /mentors/:id/slots → MentorSlotsPage                │
+│  /sessions → MySessionsPage                          │
+│  / → SelectOrgPage                                   │
+└────────────────────────┬─────────────────────────────┘
+                         │
+┌────────────────────────▼─────────────────────────────┐
+│               Pages (compose hooks + UI)              │
+│                                                      │
+│  MentorsPage:                                        │
+│    const { data, isLoading, isError } = useMentors() │
+│    → renders MentorGrid or Skeleton or ErrorState    │
+│                                                      │
+│  MentorSlotsPage:                                    │
+│    const { data } = useSlots(mentorId, dateRange)    │
+│    const { mutate, isPending } = useBooking()        │
+│    → renders SlotGrid with disabled states           │
+└────────────────────────┬─────────────────────────────┘
+                         │
+┌────────────────────────▼─────────────────────────────┐
+│              Custom Hooks (data layer)                │
+│                                                      │
+│  useBooking():                                       │
+│    mutationFn → api.bookings.create(slotId, key)     │
+│    onMutate → optimistic cache update (remove slot)  │
+│    onError → rollback cache to previous state        │
+│    onSuccess → toast + navigate to /sessions         │
+│    onSettled → invalidate slot queries               │
+└────────────────────────┬─────────────────────────────┘
+                         │
+┌────────────────────────▼─────────────────────────────┐
+│            API Client (typed, intercepted)            │
+│                                                      │
+│  Request: adds X-User-Id, X-Org-Id headers           │
+│  Response: transforms to typed interface             │
+│  Error: transforms to { error, details } shape       │
+└──────────────────────────────────────────────────────┘
+```
+
+#### TanStack Query Configuration
+
+| Query | staleTime | cacheTime | Refetch Strategy |
+|-------|-----------|-----------|-----------------|
+| Mentors list | 5 min | 10 min | Refetch on window focus |
+| Slot availability | 30s | 5 min | Refetch on window focus + interval (60s) |
+| My sessions | 1 min | 5 min | Invalidate after booking/cancel/reschedule |
+| Organizations | Infinity | Infinity | Fetched once on app load |
+
+#### Key Frontend Decisions
+
+- **No global state library** (Zustand, Redux) — TanStack Query handles server state; AuthContext handles the only client state (selected org/user)
+- **No CSS-in-JS** — Tailwind utility classes for speed; consistent design tokens via `tailwind.config.ts`
+- **date-fns** for date formatting — tree-shakeable, timezone-aware with `date-fns-tz`, no moment.js bloat
+- **React Router v6** — simple route definitions, no nested complexity needed for 4 pages
+- **Vitest + React Testing Library** — fast unit tests, test behavior not implementation
 
 ### Inter-Component Communication
 
