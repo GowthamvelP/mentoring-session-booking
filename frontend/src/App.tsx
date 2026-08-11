@@ -8,6 +8,7 @@ import { SelectOrgPage } from './pages/SelectOrgPage'
 import { MentorsPage } from './pages/MentorsPage'
 import { MentorSlotsPage } from './pages/MentorSlotsPage'
 import { MySessionsPage } from './pages/MySessionsPage'
+import { LoadingBar } from './components/ui/LoadingBar'
 import type { ReactNode } from 'react'
 
 const queryClient = new QueryClient({
@@ -82,6 +83,7 @@ function App() {
       <AuthProvider>
         <ToastProvider>
           <BrowserRouter>
+            <LoadingBar />
             <AppRoutes />
             <ToastContainer />
           </BrowserRouter>

@@ -11,6 +11,7 @@ import { SlotGrid } from '../components/slots/SlotGrid'
 import { SlotSkeleton } from '../components/ui/Skeleton'
 import { ErrorState } from '../components/ui/ErrorState'
 import { Button } from '../components/ui/Button'
+import { PageTransition } from '../components/ui/PageTransition'
 import type { Slot } from '../api/types'
 
 export function MentorSlotsPage() {
@@ -39,7 +40,7 @@ export function MentorSlotsPage() {
         onSuccess: () => {
           showToast('Session booked successfully!', 'success')
           setBookingSlotId(null)
-          setTimeout(() => navigate('/sessions'), 1500)
+          setTimeout(() => navigate('/sessions'), 2000)
         },
         onError: (error) => {
           const message = (error as { error?: string })?.error || 'Booking failed'
@@ -91,11 +92,13 @@ export function MentorSlotsPage() {
         )}
 
         {slots && (
-          <SlotGrid
-            slots={slots}
-            onSlotClick={handleBookSlot}
-            bookingSlotId={bookingSlotId}
-          />
+          <PageTransition>
+            <SlotGrid
+              slots={slots}
+              onSlotClick={handleBookSlot}
+              bookingSlotId={bookingSlotId}
+            />
+          </PageTransition>
         )}
       </div>
     </AppShell>

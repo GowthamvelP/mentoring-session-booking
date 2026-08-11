@@ -10,6 +10,7 @@ import { SessionList } from '../components/sessions/SessionList'
 import { CardSkeleton } from '../components/ui/Skeleton'
 import { EmptyState } from '../components/ui/EmptyState'
 import { ErrorState } from '../components/ui/ErrorState'
+import { PageTransition } from '../components/ui/PageTransition'
 
 export function MySessionsPage() {
   const navigate = useNavigate()
@@ -75,32 +76,34 @@ export function MySessionsPage() {
       )}
 
       {data && data.data.length > 0 && (
-        <div className="space-y-8">
-          {upcoming.length > 0 && (
-            <section>
-              <h2 className="mb-4 text-lg font-semibold text-text">
-                Upcoming
-                <span className="ml-2 text-sm font-normal text-text-dim">({upcoming.length})</span>
-              </h2>
-              <SessionList
-                bookings={upcoming}
-                onCancel={handleCancel}
-                onReschedule={handleReschedule}
-                actioningId={cancelMutation.isPending ? cancelMutation.variables : null}
-              />
-            </section>
-          )}
+        <PageTransition>
+          <div className="space-y-8">
+            {upcoming.length > 0 && (
+              <section>
+                <h2 className="mb-4 text-lg font-semibold text-text">
+                  Upcoming
+                  <span className="ml-2 text-sm font-normal text-text-dim">({upcoming.length})</span>
+                </h2>
+                <SessionList
+                  bookings={upcoming}
+                  onCancel={handleCancel}
+                  onReschedule={handleReschedule}
+                  actioningId={cancelMutation.isPending ? cancelMutation.variables : null}
+                />
+              </section>
+            )}
 
-          {past.length > 0 && (
-            <section>
-              <h2 className="mb-4 text-lg font-semibold text-text">
-                Past & Cancelled
-                <span className="ml-2 text-sm font-normal text-text-dim">({past.length})</span>
-              </h2>
-              <SessionList bookings={past} />
-            </section>
-          )}
-        </div>
+            {past.length > 0 && (
+              <section>
+                <h2 className="mb-4 text-lg font-semibold text-text">
+                  Past & Cancelled
+                  <span className="ml-2 text-sm font-normal text-text-dim">({past.length})</span>
+                </h2>
+                <SessionList bookings={past} />
+              </section>
+            )}
+          </div>
+        </PageTransition>
       )}
     </AppShell>
   )

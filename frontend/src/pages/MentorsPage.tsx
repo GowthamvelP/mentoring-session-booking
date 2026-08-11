@@ -8,6 +8,7 @@ import { CardSkeleton } from '../components/ui/Skeleton'
 import { EmptyState } from '../components/ui/EmptyState'
 import { ErrorState } from '../components/ui/ErrorState'
 import { Button } from '../components/ui/Button'
+import { PageTransition } from '../components/ui/PageTransition'
 import type { Mentor } from '../api/types'
 
 export function MentorsPage() {
@@ -51,7 +52,7 @@ export function MentorsPage() {
       )}
 
       {data && data.data.length > 0 && (
-        <>
+        <PageTransition>
           <MentorGrid mentors={data.data} onMentorClick={handleMentorClick} />
 
           {data.meta.total_pages > 1 && (
@@ -77,7 +78,7 @@ export function MentorsPage() {
               </Button>
             </div>
           )}
-        </>
+        </PageTransition>
       )}
     </AppShell>
   )
