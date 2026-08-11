@@ -1,5 +1,6 @@
 import { useMemo } from 'react'
-import { format, parseISO } from 'date-fns'
+import { parseISO } from 'date-fns'
+import { toZonedTime, format as formatTz } from 'date-fns-tz'
 import type { Slot } from '../../api/types'
 import { SlotButton } from './SlotButton'
 
@@ -7,15 +8,18 @@ interface SlotGridProps {
   slots: Slot[]
   onSlotClick?: (slot: Slot) => void
   bookingSlotId?: string | null
+  timezone: string
 }
 
-export function SlotGrid({ slots, onSlotClick, bookingSlotId }: SlotGridProps) {
+export function SlotGrid({ slots, onSlotClick, bookingSlotId, timezone }: SlotGridProps) {
   const groupedSlots = useMemo(() => {
     const groups: Record<string, Slot[]> = {}
     const available = slots.filter((s) => s.status === 'available')
 
     for (const slot of available) {
-      const date = format(parseISO(slot.start_time), 'yyyy-MM-dd')
+      // Group by date in the user's selected timezone
+      const zonedDate = toZonedTime(parseISO(slot.start_time), timezone)
+      const date = formatTz(zonedDate, 'yyyy-MM-dd', { timeZone: timezone })
       if (!groups[date]) groups[date] = []
       groups[date].push(slot)
     }
@@ -28,7 +32,7 @@ export function SlotGrid({ slots, onSlotClick, bookingSlotId }: SlotGridProps) {
     }
 
     return Object.entries(groups).sort(([a], [b]) => a.localeCompare(b))
-  }, [slots])
+  }, [slots, timezone])
 
   if (groupedSlots.length === 0) {
     return (
@@ -44,7 +48,7 @@ export function SlotGrid({ slots, onSlotClick, bookingSlotId }: SlotGridProps) {
       {groupedSlots.map(([date, daySlots]) => (
         <div key={date}>
           <h3 className="mb-3 text-sm font-semibold text-text-muted uppercase tracking-wide">
-            {format(parseISO(date), 'EEEE, MMM d')}
+            {formatTz(toZonedTime(parseISO(date), timezone), 'EEEE, MMM d', { timeZone: timezone })}
           </h3>
           <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">
             {daySlots.map((slot) => (
@@ -54,6 +58,7 @@ export function SlotGrid({ slots, onSlotClick, bookingSlotId }: SlotGridProps) {
                 onClick={() => onSlotClick?.(slot)}
                 loading={bookingSlotId === slot.id}
                 disabled={bookingSlotId !== null && bookingSlotId !== undefined && bookingSlotId !== slot.id}
+                timezone={timezone}
               />
             ))}
           </div>

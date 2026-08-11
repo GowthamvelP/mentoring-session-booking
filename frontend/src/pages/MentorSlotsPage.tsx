@@ -3,6 +3,7 @@ import { useParams, useNavigate, useSearchParams } from 'react-router-dom'
 import { addWeeks, startOfWeek, endOfWeek, format, isBefore, startOfToday } from 'date-fns'
 import { useSlots } from '../hooks/useSlots'
 import { useCreateBooking, useRescheduleBooking } from '../hooks/useBooking'
+import { useAuth } from '../hooks/useAuth'
 import { useToast } from '../context/ToastContext'
 import { AppShell } from '../components/layout/AppShell'
 import { PageHeader } from '../components/layout/PageHeader'
@@ -12,6 +13,8 @@ import { SlotSkeleton } from '../components/ui/Skeleton'
 import { ErrorState } from '../components/ui/ErrorState'
 import { Button } from '../components/ui/Button'
 import { PageTransition } from '../components/ui/PageTransition'
+import { TimezoneSelector } from '../components/ui/TimezoneSelector'
+import { getTimezoneAbbreviation } from '../lib/dates'
 import type { Slot } from '../api/types'
 
 export function MentorSlotsPage() {
@@ -19,6 +22,7 @@ export function MentorSlotsPage() {
   const [searchParams] = useSearchParams()
   const navigate = useNavigate()
   const { showToast } = useToast()
+  const { timezone, setTimezone } = useAuth()
 
   // Detect reschedule mode from URL query param
   const rescheduleBookingId = searchParams.get('reschedule')
@@ -110,12 +114,20 @@ export function MentorSlotsPage() {
         </div>
       )}
 
-      <WeekNavigation
-        currentDate={weekStart}
-        onPrevious={() => setWeekOffset((w) => w - 1)}
-        onNext={() => setWeekOffset((w) => w + 1)}
-        disablePrevious={!canGoBack}
-      />
+      <div className="flex items-center justify-between gap-4">
+        <WeekNavigation
+          currentDate={weekStart}
+          onPrevious={() => setWeekOffset((w) => w - 1)}
+          onNext={() => setWeekOffset((w) => w + 1)}
+          disablePrevious={!canGoBack}
+        />
+        <div className="flex items-center gap-3">
+          <span className="text-xs text-text-dim">
+            Times shown in {getTimezoneAbbreviation(timezone)}
+          </span>
+          <TimezoneSelector value={timezone} onChange={setTimezone} />
+        </div>
+      </div>
 
       <div className="mt-6">
         {isLoading && <SlotSkeleton />}
@@ -130,6 +142,7 @@ export function MentorSlotsPage() {
               slots={slots}
               onSlotClick={handleBookSlot}
               bookingSlotId={bookingSlotId}
+              timezone={timezone}
             />
           </PageTransition>
         )}

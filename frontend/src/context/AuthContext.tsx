@@ -1,16 +1,19 @@
 import { createContext, useState, useCallback, useEffect } from 'react'
 import type { ReactNode } from 'react'
 import type { Organization } from '../api/types'
+import { getBrowserTimezone } from '../lib/dates'
 
 interface AuthState {
   organization: Organization | null
   userId: string | null
   userName: string | null
+  timezone: string
 }
 
 interface AuthContextValue extends AuthState {
   selectOrganization: (org: Organization, userId: string, userName?: string) => void
   clearAuth: () => void
+  setTimezone: (tz: string) => void
   isAuthenticated: boolean
 }
 
@@ -21,13 +24,15 @@ function loadPersistedAuth(): AuthState {
     const orgData = localStorage.getItem('organization')
     const userId = localStorage.getItem('userId')
     const userName = localStorage.getItem('userName')
+    const timezone = localStorage.getItem('timezone') || getBrowserTimezone()
     return {
       organization: orgData ? JSON.parse(orgData) : null,
       userId,
       userName,
+      timezone,
     }
   } catch {
-    return { organization: null, userId: null, userName: null }
+    return { organization: null, userId: null, userName: null, timezone: getBrowserTimezone() }
   }
 }
 
@@ -45,22 +50,30 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (auth.userName) {
       localStorage.setItem('userName', auth.userName)
     }
+    if (auth.timezone) {
+      localStorage.setItem('timezone', auth.timezone)
+    }
   }, [auth])
 
   const selectOrganization = useCallback((org: Organization, userId: string, userName?: string) => {
-    setAuth({ organization: org, userId, userName: userName || null })
+    setAuth((prev) => ({ ...prev, organization: org, userId, userName: userName || null }))
+  }, [])
+
+  const setTimezone = useCallback((tz: string) => {
+    setAuth((prev) => ({ ...prev, timezone: tz }))
   }, [])
 
   const clearAuth = useCallback(() => {
-    setAuth({ organization: null, userId: null, userName: null })
+    setAuth({ organization: null, userId: null, userName: null, timezone: getBrowserTimezone() })
     localStorage.removeItem('organization')
     localStorage.removeItem('orgId')
     localStorage.removeItem('userId')
     localStorage.removeItem('userName')
+    localStorage.removeItem('timezone')
   }, [])
 
   return (
-    <AuthContext.Provider value={{ ...auth, selectOrganization, clearAuth, isAuthenticated: !!auth.userId && !!auth.organization }}>
+    <AuthContext.Provider value={{ ...auth, selectOrganization, clearAuth, setTimezone, isAuthenticated: !!auth.userId && !!auth.organization }}>
       {children}
     </AuthContext.Provider>
   )

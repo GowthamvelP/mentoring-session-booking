@@ -1,17 +1,18 @@
 import { memo } from 'react'
 import type { Slot } from '../../api/types'
-import { format } from 'date-fns'
+import { formatSlotTime } from '../../lib/dates'
 
 interface SlotButtonProps {
   slot: Slot
   onClick?: () => void
   disabled?: boolean
   loading?: boolean
+  timezone: string
 }
 
-export const SlotButton = memo(function SlotButton({ slot, onClick, disabled = false, loading = false }: SlotButtonProps) {
-  const startTime = format(new Date(slot.start_time), 'h:mm a')
-  const endTime = format(new Date(slot.end_time), 'h:mm a')
+export const SlotButton = memo(function SlotButton({ slot, onClick, disabled = false, loading = false, timezone }: SlotButtonProps) {
+  const startTime = formatSlotTime(slot.start_time, timezone)
+  const endTime = formatSlotTime(slot.end_time, timezone)
   const isBooked = slot.status === 'booked'
 
   return (
