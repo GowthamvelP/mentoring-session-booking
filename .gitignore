@@ -2,7 +2,6 @@
 *.log
 
 # Confidential documents
-PROMPT.md
 PROMPT copy.md
 *.pdf
 DECISION_LOG.md
