@@ -169,19 +169,18 @@ Verified by concurrency test (`spec/services/concurrency_spec.rb`): 5 threads, 1
 
 ### Authentication (Stub)
 
-Auth is header-based for development evaluation:
-```
-X-User-Id: <user-uuid>
-X-Org-Id: <organization-uuid>
-```
+The frontend provides a user-friendly auth flow:
+1. Select your organization from a card picker
+2. Choose your user (member or mentor) from the list
+3. Click Continue — headers are automatically injected
 
-The seed script outputs all UUIDs on startup for easy testing.
+Under the hood, requests carry `X-User-Id` and `X-Org-Id` headers. The backend validates both exist and belong to the same organization. In production, this would be replaced with JWT tokens from OAuth2/Cognito.
 
 ---
 
 ## Testing
 
-Run the full test suite with: `bundle exec rspec`
+**133 specs, 0 failures, 96.5% line coverage.** Run with: `bundle exec rspec`
 
 ### Correctness Properties Tested
 
@@ -202,19 +201,50 @@ Run the full test suite with: `bundle exec rspec`
 ```
 spec/
 ├── services/
-│   ├── booking_service_spec.rb       # Unit + property tests for booking flow
-│   ├── cancellation_service_spec.rb  # Cancel logic + window enforcement
+│   ├── booking_service_spec.rb       # Unit + property tests (idempotency, conflict)
+│   ├── cancellation_service_spec.rb  # Cancel logic + 1-hour window enforcement
 │   ├── reschedule_service_spec.rb    # Atomic reschedule + rollback
-│   ├── slot_service_spec.rb          # Cache-aside + query logic
+│   ├── slot_service_spec.rb          # Cache-aside + invalidation consistency
 │   ├── concurrency_spec.rb           # Multi-threaded double-booking prevention
 │   └── tenant_isolation_spec.rb      # Cross-org data isolation
 ├── requests/
-│   ├── bookings_spec.rb              # Full HTTP request cycle
-│   ├── mentors_spec.rb               # Pagination, auth enforcement
-│   └── health_spec.rb                # Dependency checks
-├── models/                           # Validations, associations, scopes
+│   ├── bookings_spec.rb              # Full HTTP request cycle (create/cancel/reschedule)
+│   ├── mentors_spec.rb               # Pagination, auth enforcement, tenant scoping
+│   ├── slots_spec.rb                 # Date params, ISO format, cache-aside
+│   ├── sessions_spec.rb              # Member + mentor views, access control
+│   ├── organizations_spec.rb         # Org list, user list endpoint
+│   ├── auth_spec.rb                  # Select-org success/failure paths
+│   ├── health_spec.rb                # All dependency checks + degraded state
+│   └── rate_limiting_spec.rb         # Rack::Attack throttle verification
+├── jobs/
+│   ├── booking_confirmation_job_spec.rb
+│   ├── booking_cancellation_job_spec.rb
+│   └── booking_reschedule_job_spec.rb
+├── middleware/
+│   └── correlation_id_middleware_spec.rb
+├── models/                           # Validations, associations, scopes, enums
 └── factories/                        # factory_bot test data builders
 ```
+
+### Load Testing (k6)
+
+Validates non-functional requirements under real concurrent HTTP load:
+
+```bash
+# Install k6
+brew install k6
+
+# Run all load tests
+cd load-tests && ./run-all.sh
+```
+
+| Script | What It Tests | Expected Result |
+|--------|--------------|-----------------|
+| `concurrency.js` | 50 VUs booking same slot | Exactly 1 wins, 49 get 409 |
+| `idempotency.js` | 100 requests, same key | 1 created, 99 return existing |
+| `rate-limiting.js` | 20 burst requests | First 10 pass, then 429 |
+| `multi-tenant.js` | Cross-org access | Mismatched user/org → 401 |
+| `load-booking-flow.js` | 50 VUs sustained 40s | p95 < 500ms, <10% errors |
 
 ---
 
@@ -292,6 +322,7 @@ mentoring-session-booking/
 │       ├── context/                # Auth + Toast contexts
 │       └── lib/                    # Utilities (idempotency, dates, constants)
 ├── docs/                           # Architecture diagrams
+├── load-tests/                     # k6 load testing scripts (5 scenarios)
 ├── docker-compose.yml              # Full stack orchestration (5 services)
 ├── .env.example                    # Required environment variables
 └── PROMPT.md                       # Spec: requirements, decisions, AI usage log
@@ -316,6 +347,7 @@ mentoring-session-booking/
 | Migrations | strong_migrations | Catches unsafe operations in dev |
 | Testing | RSpec + factory_bot + Rantly | Service specs + property-based tests |
 | Frontend Tests | Vitest + React Testing Library + MSW | Fast unit tests with API mocking |
+| Load Testing | k6 | Concurrent HTTP validation of NFRs |
 | Containers | Docker Compose | One-command full stack (5 services) |
 
 ---
