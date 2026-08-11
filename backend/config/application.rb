@@ -18,6 +18,9 @@ require "action_cable/engine"
 # you've limited to :test, :development, or :production.
 Bundler.require(*Rails.groups)
 
+# Require middleware before application class loads (needed for config.middleware)
+require_relative "../app/middleware/correlation_id_middleware"
+
 module Backend
   class Application < Rails::Application
     # Initialize configuration defaults for originally generated Rails version.
@@ -40,6 +43,12 @@ module Backend
     config.generators do |g|
       g.orm :active_record, primary_key_type: :uuid
     end
+
+    # Use Sidekiq as Active Job adapter
+    config.active_job.queue_adapter = :sidekiq
+
+    # Insert correlation ID middleware at the top of the stack
+    config.middleware.insert_before 0, CorrelationIdMiddleware
 
     # Only loads a smaller set of middleware suitable for API only apps.
     # Middleware like session, flash, cookies can be added back manually.

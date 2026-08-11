@@ -1,6 +1,13 @@
 # frozen_string_literal: true
 
+require "sidekiq/web"
+
 Rails.application.routes.draw do
+  # Sidekiq Web UI — development/production only
+  if Rails.env.development? || Rails.env.production?
+    mount Sidekiq::Web => "/sidekiq"
+  end
+
   # Default health check
   get "up" => "rails/health#show", as: :rails_health_check
 
