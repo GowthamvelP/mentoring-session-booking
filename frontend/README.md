@@ -1,32 +1,41 @@
-# React + TypeScript + Vite
+# Frontend — React 19 + Vite + Tailwind
 
-This template provides a minimal setup to get React working in Vite with HMR and some Oxlint rules.
+A React single-page application with a dark theme design system for the mentoring session booking platform.
 
-Currently, two official plugins are available:
+## Setup
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
-
-## React Compiler
-
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
-
-## Expanding the Oxlint configuration
-
-If you are developing a production application, we recommend enabling type-aware lint rules by installing `oxlint-tsgolint` and editing `.oxlintrc.json`:
-
-```json
-{
-  "$schema": "./node_modules/oxlint/configuration_schema.json",
-  "plugins": ["react", "typescript", "oxc"],
-  "options": {
-    "typeAware": true
-  },
-  "rules": {
-    "react/rules-of-hooks": "error",
-    "react/only-export-components": ["warn", { "allowConstantExport": true }]
-  }
-}
+```bash
+npm install
 ```
 
-See the [Oxlint rules documentation](https://oxc.rs/docs/guide/usage/linter/rules) for the full list of rules and categories.
+## Run
+
+```bash
+npm run dev          # Development server (http://localhost:5173)
+npm run build        # Production build
+npm run preview      # Preview production build
+npm run test         # Run tests (watch mode)
+npm run test:run     # Run tests (CI mode)
+```
+
+## Architecture
+
+- **API Layer** (`src/api/`): Typed Axios client with auth header injection
+- **Hooks** (`src/hooks/`): TanStack Query hooks with optimistic updates
+- **Components** (`src/components/`): Composable UI primitives (dark theme)
+- **Pages** (`src/pages/`): 4 main pages composing hooks + components
+- **Context** (`src/context/`): Auth state + Toast notifications
+
+## Design System
+
+Dark theme with custom properties:
+- Surface: `#0f172a` (slate-900)
+- Primary: `#6366f1` (indigo-500)
+- Accent: `#22d3ee` (cyan-400)
+- Text: `#f8fafc` / `#94a3b8` / `#64748b`
+
+## Environment Variables
+
+| Variable | Description | Default |
+|----------|-------------|---------|
+| VITE_API_URL | Backend API base URL | http://localhost:3000/api/v1 |

@@ -1,7 +1,22 @@
+# Environment files (secrets)
 .env
+!.env.example
+
+# Logs
 *.log
 
-# Confidential documents
-PROMPT copy.md
-*.pdf
-DECISION_LOG.md
+# OS files
+.DS_Store
+Thumbs.db
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Coverage reports
+backend/coverage/
+
+# Vendor bundle (local gems)
+backend/vendor/bundle/

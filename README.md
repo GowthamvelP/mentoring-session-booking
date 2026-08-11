@@ -160,6 +160,7 @@ Verified by concurrency test (`spec/services/concurrency_spec.rb`): 5 threads, 1
 | POST | `/api/v1/auth/select-org` | Public | Establish session context |
 | GET | `/api/v1/health` | Public | Health check (PG, Redis, Sidekiq) |
 | GET | `/api/v1/mentors` | Org-scoped | Browse mentors (paginated) |
+| GET | `/api/v1/mentors?search=react` | Org-scoped | Filter by name or expertise |
 | GET | `/api/v1/mentors/:id/slots` | Org-scoped | Available slots (cached, 300s TTL) |
 | POST | `/api/v1/bookings` | Org-scoped | Book a slot (idempotent) |
 | PATCH | `/api/v1/bookings/:id/cancel` | Org-scoped | Cancel booking |
@@ -284,6 +285,9 @@ This project was built using Kiro (agentic IDE) with structured spec-driven deve
 - Recurring slot generation (mentors manage their own availability)
 - Real-time notifications via ActionCable/WebSocket
 - Email notifications via ActionMailer + SendGrid
+- Mentor search powered by Elasticsearch (full-text + expertise faceted search)
+- Variable session durations (30/60/90min) configurable per mentor
+- Session type templates (career coaching, technical review, pair programming)
 
 ### Operational
 - Prometheus metrics (yabeda-rails + yabeda-sidekiq)
