@@ -13,6 +13,5 @@ class CreateBookings < ActiveRecord::Migration[8.0]
     end
 
     add_index :bookings, :idempotency_key, unique: true
-    add_index :bookings, :slot_id
   end
 end

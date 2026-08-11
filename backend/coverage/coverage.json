@@ -1,0 +1,419 @@
+{
+  "$schema": "https://raw.githubusercontent.com/simplecov-ruby/simplecov/main/schemas/coverage-v1.0.schema.json",
+  "meta": {
+    "schema_version": "1.0",
+    "simplecov_version": "1.1.0",
+    "command_name": "RSpec",
+    "project_name": "Backend",
+    "timestamp": "2026-08-11T16:52:17.939+05:30",
+    "root": "/Users/gowthamvelpalanivel/Projects/mentoring-session-booking/backend",
+    "commit": "dd276b8c792a1d66e565acd2f44d9b91f1509236",
+    "primary_coverage": "line",
+    "line_coverage": true,
+    "branch_coverage": false,
+    "method_coverage": false
+  },
+  "total": {
+    "lines": {
+      "covered": 48,
+      "missed": 8,
+      "omitted": 34,
+      "total": 56,
+      "percent": 85.71428571428571,
+      "strength": 1.5892857142857142
+    }
+  },
+  "coverage": {
+    "app/controllers/application_controller.rb": {
+      "source": [
+        "class ApplicationController < ActionController::API",
+        "end"
+      ],
+      "lines": [
+        0,
+        null
+      ],
+      "lines_covered_percent": 0.0,
+      "covered_lines": 0,
+      "missed_lines": 1,
+      "omitted_lines": 1,
+      "total_lines": 1
+    },
+    "app/jobs/application_job.rb": {
+      "source": [
+        "class ApplicationJob < ActiveJob::Base",
+        "  # Automatically retry jobs that encountered a deadlock",
+        "  # retry_on ActiveRecord::Deadlocked",
+        "",
+        "  # Most jobs are safe to ignore if the underlying records are no longer available",
+        "  # discard_on ActiveJob::DeserializationError",
+        "end"
+      ],
+      "lines": [
+        0,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null
+      ],
+      "lines_covered_percent": 0.0,
+      "covered_lines": 0,
+      "missed_lines": 1,
+      "omitted_lines": 6,
+      "total_lines": 1
+    },
+    "app/mailers/application_mailer.rb": {
+      "source": [
+        "class ApplicationMailer < ActionMailer::Base",
+        "  default from: \"from@example.com\"",
+        "  layout \"mailer\"",
+        "end"
+      ],
+      "lines": [
+        0,
+        0,
+        0,
+        null
+      ],
+      "lines_covered_percent": 0.0,
+      "covered_lines": 0,
+      "missed_lines": 3,
+      "omitted_lines": 1,
+      "total_lines": 3
+    },
+    "app/models/application_record.rb": {
+      "source": [
+        "class ApplicationRecord < ActiveRecord::Base",
+        "  primary_abstract_class",
+        "end"
+      ],
+      "lines": [
+        1,
+        1,
+        null
+      ],
+      "lines_covered_percent": 100.0,
+      "covered_lines": 2,
+      "missed_lines": 0,
+      "omitted_lines": 1,
+      "total_lines": 2
+    },
+    "app/models/booking.rb": {
+      "source": [
+        "class Booking < ApplicationRecord",
+        "  acts_as_tenant :organization",
+        "",
+        "  belongs_to :slot",
+        "  belongs_to :member, class_name: \"User\", inverse_of: :bookings",
+        "",
+        "  enum :status, { confirmed: \"confirmed\", cancelled: \"cancelled\", completed: \"completed\" }",
+        "",
+        "  validates :idempotency_key, presence: true, uniqueness: true",
+        "  validates :status, presence: true",
+        "  validates :booked_at, presence: true",
+        "",
+        "  scope :active, -> { where(status: :confirmed) }",
+        "  scope :by_slot_time, -> { joins(:slot).order(\"slots.start_time DESC\") }",
+        "end"
+      ],
+      "lines": [
+        1,
+        1,
+        null,
+        1,
+        1,
+        null,
+        1,
+        null,
+        1,
+        1,
+        1,
+        null,
+        3,
+        1,
+        null
+      ],
+      "lines_covered_percent": 100.0,
+      "covered_lines": 10,
+      "missed_lines": 0,
+      "omitted_lines": 5,
+      "total_lines": 10
+    },
+    "app/models/current.rb": {
+      "source": [
+        "class Current < ActiveSupport::CurrentAttributes",
+        "  attribute :user, :organization",
+        "end"
+      ],
+      "lines": [
+        0,
+        0,
+        null
+      ],
+      "lines_covered_percent": 0.0,
+      "covered_lines": 0,
+      "missed_lines": 2,
+      "omitted_lines": 1,
+      "total_lines": 2
+    },
+    "app/models/mentor_profile.rb": {
+      "source": [
+        "class MentorProfile < ApplicationRecord",
+        "  belongs_to :user",
+        "",
+        "  validates :bio, presence: true",
+        "  validates :expertise, presence: true",
+        "end"
+      ],
+      "lines": [
+        1,
+        1,
+        null,
+        1,
+        1,
+        null
+      ],
+      "lines_covered_percent": 100.0,
+      "covered_lines": 4,
+      "missed_lines": 0,
+      "omitted_lines": 2,
+      "total_lines": 4
+    },
+    "app/models/organization.rb": {
+      "source": [
+        "class Organization < ApplicationRecord",
+        "  has_many :users, dependent: :destroy",
+        "",
+        "  validates :name, presence: true",
+        "  validates :timezone, presence: true",
+        "end"
+      ],
+      "lines": [
+        1,
+        1,
+        null,
+        1,
+        1,
+        null
+      ],
+      "lines_covered_percent": 100.0,
+      "covered_lines": 4,
+      "missed_lines": 0,
+      "omitted_lines": 2,
+      "total_lines": 4
+    },
+    "app/models/slot.rb": {
+      "source": [
+        "class Slot < ApplicationRecord",
+        "  acts_as_tenant :organization",
+        "",
+        "  belongs_to :mentor, class_name: \"User\", inverse_of: :slots",
+        "  has_one :booking, dependent: :restrict_with_error",
+        "",
+        "  enum :status, { available: \"available\", booked: \"booked\" }",
+        "",
+        "  validates :start_time, presence: true",
+        "  validates :end_time, presence: true",
+        "  validates :status, presence: true",
+        "  validate :end_after_start",
+        "",
+        "  scope :available, -> { where(status: :available) }",
+        "  scope :future, -> { where(\"start_time > ?\", Time.current) }",
+        "  scope :for_date_range, ->(start_date, end_date) {",
+        "    where(start_time: start_date.beginning_of_day..end_date.end_of_day)",
+        "  }",
+        "",
+        "  private",
+        "",
+        "  def end_after_start",
+        "    return if end_time.blank? || start_time.blank?",
+        "    errors.add(:end_time, \"must be after start time\") if end_time <= start_time",
+        "  end",
+        "end"
+      ],
+      "lines": [
+        1,
+        1,
+        null,
+        1,
+        1,
+        null,
+        1,
+        null,
+        1,
+        1,
+        1,
+        1,
+        null,
+        3,
+        3,
+        1,
+        0,
+        null,
+        null,
+        1,
+        null,
+        1,
+        19,
+        14,
+        null,
+        null
+      ],
+      "lines_covered_percent": 94.11764705882354,
+      "covered_lines": 16,
+      "missed_lines": 1,
+      "omitted_lines": 9,
+      "total_lines": 17
+    },
+    "app/models/user.rb": {
+      "source": [
+        "class User < ApplicationRecord",
+        "  acts_as_tenant :organization",
+        "",
+        "  has_one :mentor_profile, dependent: :destroy",
+        "  has_many :slots, foreign_key: :mentor_id, dependent: :destroy, inverse_of: :mentor",
+        "  has_many :bookings, foreign_key: :member_id, dependent: :destroy, inverse_of: :member",
+        "",
+        "  has_secure_password validations: false # Stub auth — no password required",
+        "",
+        "  enum :role, { member: \"member\", mentor: \"mentor\" }",
+        "",
+        "  validates :email, presence: true, uniqueness: { scope: :organization_id }",
+        "  validates :name, presence: true",
+        "  validates :role, presence: true, inclusion: { in: roles.keys }",
+        "",
+        "  scope :mentors, -> { where(role: :mentor) }",
+        "  scope :members, -> { where(role: :member) }",
+        "end"
+      ],
+      "lines": [
+        1,
+        1,
+        null,
+        1,
+        1,
+        1,
+        null,
+        1,
+        null,
+        1,
+        null,
+        1,
+        1,
+        1,
+        null,
+        3,
+        3,
+        null
+      ],
+      "lines_covered_percent": 100.0,
+      "covered_lines": 12,
+      "missed_lines": 0,
+      "omitted_lines": 6,
+      "total_lines": 12
+    }
+  },
+  "groups": {
+    "Controllers": {
+      "lines": {
+        "covered": 0,
+        "missed": 1,
+        "omitted": 1,
+        "total": 1,
+        "percent": 0.0,
+        "strength": 0.0
+      },
+      "files": [
+        "app/controllers/application_controller.rb"
+      ]
+    },
+    "Channels": {
+      "lines": {
+        "covered": 0,
+        "missed": 0,
+        "omitted": 0,
+        "total": 0,
+        "percent": 100.0,
+        "strength": 0.0
+      },
+      "files": []
+    },
+    "Models": {
+      "lines": {
+        "covered": 48,
+        "missed": 3,
+        "omitted": 26,
+        "total": 51,
+        "percent": 94.11764705882354,
+        "strength": 1.7450980392156863
+      },
+      "files": [
+        "app/models/application_record.rb",
+        "app/models/booking.rb",
+        "app/models/current.rb",
+        "app/models/mentor_profile.rb",
+        "app/models/organization.rb",
+        "app/models/slot.rb",
+        "app/models/user.rb"
+      ]
+    },
+    "Mailers": {
+      "lines": {
+        "covered": 0,
+        "missed": 3,
+        "omitted": 1,
+        "total": 3,
+        "percent": 0.0,
+        "strength": 0.0
+      },
+      "files": [
+        "app/mailers/application_mailer.rb"
+      ]
+    },
+    "Helpers": {
+      "lines": {
+        "covered": 0,
+        "missed": 0,
+        "omitted": 0,
+        "total": 0,
+        "percent": 100.0,
+        "strength": 0.0
+      },
+      "files": []
+    },
+    "Jobs": {
+      "lines": {
+        "covered": 0,
+        "missed": 1,
+        "omitted": 6,
+        "total": 1,
+        "percent": 0.0,
+        "strength": 0.0
+      },
+      "files": [
+        "app/jobs/application_job.rb"
+      ]
+    },
+    "Libraries": {
+      "lines": {
+        "covered": 0,
+        "missed": 0,
+        "omitted": 0,
+        "total": 0,
+        "percent": 100.0,
+        "strength": 0.0
+      },
+      "files": []
+    }
+  },
+  "errors": {
+    "minimum_coverage": {
+      "lines": {
+        "expected": 90,
+        "actual": 85.71
+      }
+    }
+  }
+}
