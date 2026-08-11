@@ -1,10 +1,11 @@
 import apiClient from './client'
 import type { Booking } from './types'
 
-export async function createBooking(slotId: string, idempotencyKey: string): Promise<Booking> {
+export async function createBooking(slotId: string, idempotencyKey: string, timezone?: string): Promise<Booking> {
   const { data } = await apiClient.post('/bookings', {
     slot_id: slotId,
     idempotency_key: idempotencyKey,
+    timezone: timezone,
   })
   return data.data ?? data
 }

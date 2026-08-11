@@ -8,7 +8,7 @@
 #   :mentor_session — for "My Mentor Sessions" (mentor perspective)
 class BookingBlueprint < Blueprinter::Base
   identifier :id
-  fields :status
+  fields :status, :booked_timezone
 
   field :booked_at do |booking|
     booking.booked_at&.utc&.iso8601

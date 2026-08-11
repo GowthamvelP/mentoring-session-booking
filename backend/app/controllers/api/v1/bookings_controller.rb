@@ -15,7 +15,8 @@ module Api
         result = BookingService.call(
           slot_id: params[:slot_id],
           member: current_user,
-          idempotency_key: idempotency_key
+          idempotency_key: idempotency_key,
+          timezone: params[:timezone]
         )
 
         if result[:success]

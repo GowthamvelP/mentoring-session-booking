@@ -4,11 +4,11 @@ import { QUERY_KEYS } from '../lib/constants'
 import { generateIdempotencyKey } from '../lib/idempotency'
 import type { Slot } from '../api/types'
 
-export function useCreateBooking(mentorId?: string) {
+export function useCreateBooking(mentorId?: string, timezone?: string) {
   const queryClient = useQueryClient()
 
   return useMutation({
-    mutationFn: (slotId: string) => createBooking(slotId, generateIdempotencyKey()),
+    mutationFn: (slotId: string) => createBooking(slotId, generateIdempotencyKey(), timezone),
     onMutate: async (slotId: string) => {
       if (!mentorId) return
 

@@ -13,14 +13,15 @@
 #   result[:error]   # => Error message (on failure)
 #   result[:status]  # => HTTP status symbol (on failure)
 class BookingService
-  def self.call(slot_id:, member:, idempotency_key:)
-    new(slot_id: slot_id, member: member, idempotency_key: idempotency_key).call
+  def self.call(slot_id:, member:, idempotency_key:, timezone: nil)
+    new(slot_id: slot_id, member: member, idempotency_key: idempotency_key, timezone: timezone).call
   end
 
-  def initialize(slot_id:, member:, idempotency_key:)
+  def initialize(slot_id:, member:, idempotency_key:, timezone: nil)
     @slot_id = slot_id
     @member = member
     @idempotency_key = idempotency_key
+    @timezone = timezone
   end
 
   def call
@@ -57,7 +58,8 @@ class BookingService
         organization: ActsAsTenant.current_tenant,
         idempotency_key: @idempotency_key,
         status: :confirmed,
-        booked_at: Time.current
+        booked_at: Time.current,
+        booked_timezone: @timezone || ActsAsTenant.current_tenant&.timezone || "UTC"
       )
     end
 

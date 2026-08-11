@@ -14,7 +14,6 @@ import { ErrorState } from '../components/ui/ErrorState'
 import { Button } from '../components/ui/Button'
 import { PageTransition } from '../components/ui/PageTransition'
 import { TimezoneSelector } from '../components/ui/TimezoneSelector'
-import { getTimezoneAbbreviation } from '../lib/dates'
 import type { Slot } from '../api/types'
 
 export function MentorSlotsPage() {
@@ -40,7 +39,7 @@ export function MentorSlotsPage() {
 
   const { data: slots, isLoading, isError, refetch } = useSlots(mentorId || '', startDate, endDate)
 
-  const bookMutation = useCreateBooking(mentorId)
+  const bookMutation = useCreateBooking(mentorId, timezone)
   const rescheduleMutation = useRescheduleBooking()
 
   const handleBookSlot = useCallback(
@@ -122,8 +121,8 @@ export function MentorSlotsPage() {
           disablePrevious={!canGoBack}
         />
         <div className="flex items-center gap-3">
-          <span className="text-xs text-text-dim">
-            Times shown in {getTimezoneAbbreviation(timezone)}
+          <span className="text-xs text-text-dim hidden sm:inline">
+            Times shown in your selected timezone
           </span>
           <TimezoneSelector value={timezone} onChange={setTimezone} />
         </div>
