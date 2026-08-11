@@ -181,7 +181,7 @@ Under the hood, requests carry `X-User-Id` and `X-Org-Id` headers. The backend v
 
 ## Testing
 
-**133 specs, 0 failures, 96.5% line coverage.** Run with: `bundle exec rspec`
+**154 specs, 0 failures, 92% line coverage.** Run with: `bundle exec rspec`
 
 ### Correctness Properties Tested
 

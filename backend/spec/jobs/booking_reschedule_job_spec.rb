@@ -30,7 +30,7 @@ RSpec.describe BookingRescheduleJob, type: :job do
     expect { described_class.perform_now(old_booking.id, SecureRandom.uuid) }.to raise_error(ActiveRecord::RecordNotFound)
   end
 
-  it "is enqueued on the default queue" do
-    expect(described_class.new.queue_name).to eq("default")
+  it "is enqueued on the critical queue" do
+    expect(described_class.new.queue_name).to eq("critical")
   end
 end
