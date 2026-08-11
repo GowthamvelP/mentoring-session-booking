@@ -2,7 +2,7 @@
 
 A full-stack mentoring session booking application enabling members to browse mentors, book 1:1 sessions with concurrency safety, and manage their sessions — all within a multi-tenant organizational context.
 
-**Built for:** System Design Exercise  
+**Built as:** A production-grade demonstration of scheduling system architecture
 **By:** Gowthamvel Palanivel  
 **Stack:** Ruby on Rails 8 (API-only) + React 19 + PostgreSQL 16 + Redis 7 + Sidekiq
 
@@ -37,23 +37,23 @@ The seed script automatically creates sample data (2 orgs, 4 mentors, 4 members,
 ## Architecture
 
 ```
-┌─────────────────────────────────────────────────────────────────────┐
-│                          Docker Network                              │
-│                                                                     │
-│  ┌─────────────────┐  ┌─────────────────┐  ┌────────────────────┐  │
-│  │  Frontend        │  │  Backend         │  │  Sidekiq Worker    │  │
-│  │  React 19 + Vite │──│  Rails 8 + Puma  │──│  (background jobs) │  │
-│  │  :5173           │  │  :3000           │  │                    │  │
-│  └─────────────────┘  └────────┬─────────┘  └────────┬───────────┘  │
-│                                │                      │              │
-│  ┌─────────────────┐  ┌───────┴──────────┐           │              │
-│  │  PostgreSQL 16   │  │    Redis 7       │───────────┘              │
-│  │  :5432           │  │    :6379         │                          │
-│  │  • UUID PKs      │  │    • Cache       │                          │
-│  │  • Row locks     │  │    • Job queue   │                          │
-│  │  • Constraints   │  │    • Rate limits │                          │
-│  └─────────────────┘  └──────────────────┘                          │
-└─────────────────────────────────────────────────────────────────────┘
++---------------------------------------------------------------------+
+|                          Docker Network                              |
+|                                                                     |
+|  +-----------------+  +-----------------+  +--------------------+   |
+|  | Frontend        |  | Backend         |  | Sidekiq Worker     |   |
+|  | React 19 + Vite |--| Rails 8 + Puma  |--| (background jobs)  |   |
+|  | :5173           |  | :3000           |  |                    |   |
+|  +-----------------+  +--------+--------+  +---------+----------+   |
+|                                |                     |              |
+|  +-----------------+  +--------+--------+            |              |
+|  | PostgreSQL 16   |  |    Redis 7      |------------+              |
+|  | :5432           |  |    :6379        |                           |
+|  | - UUID PKs      |  |    - Cache      |                           |
+|  | - Row locks     |  |    - Job queue  |                           |
+|  | - Constraints   |  |    - Rate limits|                           |
+|  +-----------------+  +-----------------+                           |
++---------------------------------------------------------------------+
 ```
 
 ### Backend (Rails 8, API-only)
@@ -254,7 +254,7 @@ This project was built using Kiro (agentic IDE) with structured spec-driven deve
 
 1. **Requirements Analysis** — AI generated 20 requirements from the brief, then analyzed them for ambiguities. 15 clarifications were resolved through interactive Q&A.
 
-2. **Tech Stack Decision** — AI challenged my initial Node.js bias, modeled Rails vs Python vs Node for this specific problem domain, and recommended Rails based on my experience profile + team alignment with TechMentor.
+2. **Tech Stack Decision** — AI challenged my initial Node.js bias, modeled Rails vs Python vs Node for this specific problem domain, and recommended Rails based on my experience profile + domain alignment with mentoring platforms.
 
 3. **Architecture Design** — AI proposed pessimistic locking over optimistic (simpler for 48h, same correctness), two-state slots, and API-only mode. I validated against my production experience with GetGist (a Calendly-like scheduling platform I built).
 
@@ -262,7 +262,7 @@ This project was built using Kiro (agentic IDE) with structured spec-driven deve
 
 5. **Testing** — AI generated property-based tests for all 9 correctness properties, plus service specs and request specs.
 
-**Key decisions where I overrode AI:** Initial recommendation was Node.js (my "daily driver"). After providing context about TechMentor's Ruby on Rails stack and my own Rails experience, AI correctly reversed its recommendation. The exploration is preserved in `PROMPT.md` as documentation of the decision process.
+**Key decisions where I overrode AI:** Initial recommendation was Node.js (my "daily driver"). After analyzing the target domain's Rails ecosystem alignment and my own Rails experience, AI correctly reversed its recommendation. The exploration is documented in the project spec files.
 
 **What AI couldn't do:** Domain nuance around slot semantics (two-state vs three-state), cancellation policy tradeoffs, and production scaling paths came from my 9+ years of backend architecture experience and my work on GetGist.
 
@@ -325,7 +325,6 @@ mentoring-session-booking/
 ├── load-tests/                     # k6 load testing scripts (5 scenarios)
 ├── docker-compose.yml              # Full stack orchestration (5 services)
 ├── .env.example                    # Required environment variables
-└── PROMPT.md                       # Spec: requirements, decisions, AI usage log
 ```
 
 ---
@@ -334,7 +333,7 @@ mentoring-session-booking/
 
 | Component | Technology | Why |
 |-----------|-----------|-----|
-| Backend | Rails 8.1.3 (API-only) | Convention, native patterns, TechMentor team alignment |
+| Backend | Rails 8.1.3 (API-only) | Convention, native patterns, domain alignment |
 | Database | PostgreSQL 16 | Row locks, UUID support, JSON, array columns |
 | Cache + Queue | Redis 7 | Single infra for Rails.cache + Sidekiq |
 | Background Jobs | Sidekiq 7 | Reliable, retry with backoff, dead letters |

@@ -2,7 +2,7 @@
 
 ## Introduction
 
-A full-stack mentoring session booking system for TechMentor, enabling members within multi-tenant organizations to browse mentors, view available time slots, and book concurrency-safe mentoring sessions. The system uses Ruby on Rails 8.0 with PostgreSQL, Redis, and Sidekiq, deployed via docker-compose. It demonstrates production-grade patterns including optimistic locking, idempotent APIs, cache-aside caching, and multi-tenant data isolation.
+A full-stack mentoring session booking system enabling members within multi-tenant organizations to browse mentors, view available time slots, and book concurrency-safe mentoring sessions. The system uses Ruby on Rails 8.0 with PostgreSQL, Redis, and Sidekiq, deployed via docker-compose. It demonstrates production-grade patterns including optimistic locking, idempotent APIs, cache-aside caching, and multi-tenant data isolation.
 
 ## Glossary
 

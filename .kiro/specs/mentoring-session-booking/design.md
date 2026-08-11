@@ -2,7 +2,7 @@
 
 ## Overview
 
-A full-stack mentoring session booking system for TechMentor, enabling members within multi-tenant organizations to browse mentors, view available time slots, and book concurrency-safe mentoring sessions. The system uses Ruby on Rails 8.0 (API-only) with PostgreSQL 16, Redis 7, and Sidekiq, deployed via docker-compose. The frontend is a React 18 + Vite + Tailwind CSS SPA consuming the JSON API via TanStack Query.
+A full-stack mentoring session booking system enabling members within multi-tenant organizations to browse mentors, view available time slots, and book concurrency-safe mentoring sessions. The system uses Ruby on Rails 8.0 (API-only) with PostgreSQL 16, Redis 7, and Sidekiq, deployed via docker-compose. The frontend is a React 18 + Vite + Tailwind CSS SPA consuming the JSON API via TanStack Query.
 
 **Key design decisions (post-requirements):**
 

@@ -1,8 +1,8 @@
 import { useState, useCallback } from 'react'
-import { useParams, useNavigate } from 'react-router-dom'
+import { useParams, useNavigate, useSearchParams } from 'react-router-dom'
 import { addWeeks, startOfWeek, endOfWeek, format, isBefore, startOfToday } from 'date-fns'
 import { useSlots } from '../hooks/useSlots'
-import { useCreateBooking } from '../hooks/useBooking'
+import { useCreateBooking, useRescheduleBooking } from '../hooks/useBooking'
 import { useToast } from '../context/ToastContext'
 import { AppShell } from '../components/layout/AppShell'
 import { PageHeader } from '../components/layout/PageHeader'
@@ -16,8 +16,13 @@ import type { Slot } from '../api/types'
 
 export function MentorSlotsPage() {
   const { id: mentorId } = useParams<{ id: string }>()
+  const [searchParams] = useSearchParams()
   const navigate = useNavigate()
   const { showToast } = useToast()
+
+  // Detect reschedule mode from URL query param
+  const rescheduleBookingId = searchParams.get('reschedule')
+  const isRescheduleMode = !!rescheduleBookingId
 
   const [weekOffset, setWeekOffset] = useState(0)
   const [bookingSlotId, setBookingSlotId] = useState<string | null>(null)
@@ -32,24 +37,46 @@ export function MentorSlotsPage() {
   const { data: slots, isLoading, isError, refetch } = useSlots(mentorId || '', startDate, endDate)
 
   const bookMutation = useCreateBooking(mentorId)
+  const rescheduleMutation = useRescheduleBooking()
 
   const handleBookSlot = useCallback(
     (slot: Slot) => {
       setBookingSlotId(slot.id)
-      bookMutation.mutate(slot.id, {
-        onSuccess: () => {
-          showToast('Session booked successfully!', 'success')
-          setBookingSlotId(null)
-          setTimeout(() => navigate('/sessions'), 2000)
-        },
-        onError: (error) => {
-          const message = (error as { error?: string })?.error || 'Booking failed'
-          showToast(message, 'error')
-          setBookingSlotId(null)
-        },
-      })
+
+      if (isRescheduleMode && rescheduleBookingId) {
+        // RESCHEDULE MODE: Call reschedule endpoint
+        rescheduleMutation.mutate(
+          { bookingId: rescheduleBookingId, newSlotId: slot.id },
+          {
+            onSuccess: () => {
+              showToast('Session rescheduled successfully!', 'success')
+              setBookingSlotId(null)
+              setTimeout(() => navigate('/sessions'), 2000)
+            },
+            onError: (error) => {
+              const message = (error as { error?: string })?.error || 'Reschedule failed'
+              showToast(message, 'error')
+              setBookingSlotId(null)
+            },
+          }
+        )
+      } else {
+        // NORMAL MODE: Create new booking
+        bookMutation.mutate(slot.id, {
+          onSuccess: () => {
+            showToast('Session booked successfully!', 'success')
+            setBookingSlotId(null)
+            setTimeout(() => navigate('/sessions'), 2000)
+          },
+          onError: (error) => {
+            const message = (error as { error?: string })?.error || 'Booking failed'
+            showToast(message, 'error')
+            setBookingSlotId(null)
+          },
+        })
+      }
     },
-    [bookMutation, showToast, navigate]
+    [bookMutation, rescheduleMutation, showToast, navigate, isRescheduleMode, rescheduleBookingId]
   )
 
   const canGoBack = !isBefore(addWeeks(startOfToday(), weekOffset - 1), startOfToday())
@@ -65,17 +92,23 @@ export function MentorSlotsPage() {
   return (
     <AppShell>
       <PageHeader
-        title="Available Slots"
-        description="Choose a time that works for you"
+        title={isRescheduleMode ? "Reschedule Session" : "Available Slots"}
+        description={isRescheduleMode ? "Pick a new time for your session" : "Choose a time that works for you"}
         action={
-          <Button variant="ghost" size="sm" onClick={() => navigate('/mentors')}>
+          <Button variant="ghost" size="sm" onClick={() => navigate(isRescheduleMode ? '/sessions' : '/mentors')}>
             <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
             </svg>
-            Back to mentors
+            {isRescheduleMode ? 'Back to sessions' : 'Back to mentors'}
           </Button>
         }
       />
+
+      {isRescheduleMode && (
+        <div className="mb-4 rounded-lg border border-warning/30 bg-warning/5 px-4 py-3 text-sm text-warning">
+          ⚠️ You are rescheduling an existing session. Selecting a new slot will cancel your current booking and create a new one.
+        </div>
+      )}
 
       <WeekNavigation
         currentDate={weekStart}

@@ -40,7 +40,7 @@ export function MySessionsPage() {
   const handleReschedule = (bookingId: string) => {
     const booking = data?.data.find((b) => b.id === bookingId)
     if (booking?.mentor?.id) {
-      navigate(`/mentors/${booking.mentor.id}/slots`)
+      navigate(`/mentors/${booking.mentor.id}/slots?reschedule=${bookingId}`)
     }
   }
 

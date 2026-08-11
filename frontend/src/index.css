@@ -95,3 +95,11 @@ body {
   left: 0;
   z-index: 50;
 }
+
+/* Global cursor fix for interactive elements */
+button:not(:disabled),
+[role="radio"],
+[role="button"],
+a[href] {
+  cursor: pointer;
+}
