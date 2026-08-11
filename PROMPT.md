@@ -6,6 +6,12 @@
 
 ---
 
+# KIRO INSTRUCTIONS
+- Read this file section by section as requested
+- Do NOT generate code until we reach Plan Mode
+- Challenge my assumptions — don't agree by default
+- When you disagree, provide concrete alternatives with tradeoffs
+
 ## WHO I AM
 
 I'm a Technical Lead / Backend & Platform Architect with 9+ years of experience.
@@ -113,6 +119,206 @@ acceptable for an MVP?
 
 ---
 
+## FINAL STACK DECISION (Post-Analysis)
+
+> **This section supersedes the "EXPLORATION PHASE" above.**
+> The exploration is preserved for README documentation of AI-assisted decision-making.
+
+### Backend: Ruby on Rails 8.0 + PostgreSQL + Redis + Sidekiq
+
+**Decision rationale (scored against framework):**
+
+| Criteria | Weight | Rails Score | Why |
+|----------|--------|-------------|-----|
+| 48-hour delivery confidence | 40% | 5/5 | Daily Rails user (Nextpoint monolith), built Calendly-class scheduling platform in Rails, Sidekiq migration expert |
+| Production correctness | 30% | 5/5 | Native `lock_version` optimistic locking, `Current.organization` tenancy, Sidekiq for jobs, `Rails.cache` for caching |
+| Team alignment (TechMentor) | 20% | 5/5 | TechMentor core product is Rails; signals immediate team contribution |
+| Learning value | 10% | 3/5 | Demonstrates depth over breadth |
+| **Weighted Total** | | **4.8/5** | |
+
+**Rails 8.0 advantages leveraged:**
+- **Solid Queue** available (but using Sidekiq free for richer monitoring + familiar API)
+- **Solid Cache** available (but using Redis for unified cache+queue infra in docker-compose)
+- **Authentication generator** — `rails generate authentication` gives session-based auth scaffold (simplifies stub auth)
+- **Thruster** proxy in Dockerfile — asset caching and compression out of the box
+- **Propshaft** — lightweight asset pipeline (no Sprockets overhead)
+- **FOR UPDATE SKIP LOCKED** — native PostgreSQL support for queue polling (Solid Queue uses this)
+- **Regexp.timeout = 1s default** — security hardening against ReDoS attacks
+
+**Why NOT Sidekiq Pro/Enterprise (free tier suffices for MVP):**
+- Free Sidekiq provides: reliable enqueue, retry with exponential backoff, dead letter queue, concurrency control
+- Pro adds: batches, unique jobs, rate limiting (we implement rate limiting at rack level instead)
+- Enterprise adds: periodic jobs, rolling restarts, multi-redis (not needed at this scale)
+- **Document in README:** "Sidekiq Pro would add native unique jobs (replacing our idempotency_key approach) and batch operations for bulk notifications"
+
+### Frontend: React 18 + Vite + Tailwind CSS + TanStack Query
+
+**Unchanged from exploration.** Vite remains the right choice — no SSR needed.
+
+### Infrastructure: PostgreSQL + Redis + Sidekiq (docker-compose)
+
+**Architecture:**
+- PostgreSQL: Primary data store + migrations (via ActiveRecord + strong_migrations)
+- Redis: Cache store (Rails.cache) + Sidekiq job queue (single instance, dual purpose)
+- Sidekiq: Background job processing (booking confirmations, cancellations, notifications)
+
+---
+
+### Gem Strategy — Maximise Community Solutions, Minimise Custom Code
+
+| Concern | Gem | Why this gem |
+|---------|-----|-------------|
+| **API Serialization** | `blueprinter` | Fast, declarative, no magic. Explicit field definitions prevent accidental data leaks |
+| **Background Jobs** | `sidekiq` (free) | Battle-tested, Redis-backed, built-in retry + dead letters. You know it deeply |
+| **Rate Limiting** | `rack-attack` | Rack middleware = framework-agnostic, Redis store for distributed state |
+| **Caching** | `Rails.cache` + `redis` gem | Native Rails cache-aside with Redis backend, `expires_in`, pattern-based invalidation |
+| **Multi-tenancy** | `acts_as_tenant` | Automatic scoping via `set_current_tenant`, prevents cross-tenant data leaks at query level |
+| **Safe Migrations** | `strong_migrations` | Catches unsafe migrations in dev (lock timeouts, non-concurrent index creation, column removal without ignoring) |
+| **Structured Logging** | `lograge` + `request_store` | JSON structured logs with correlation IDs; `request_store` for per-request context |
+| **Pagination** | `pagy` | Fastest Ruby pagination gem, minimal memory footprint vs. kaminari/will_paginate |
+| **Testing** | `rspec-rails` + `factory_bot_rails` + `shoulda-matchers` | Standard Rails testing stack |
+| **Concurrency Testing** | `parallel_tests` or custom threads | For simulating concurrent booking attempts |
+| **API Documentation** | `rswag` (if time permits) | Swagger/OpenAPI from RSpec request specs |
+| **CORS** | `rack-cors` | Standard cross-origin handling for SPA frontend |
+| **UUID Primary Keys** | `pgcrypto` extension | Native PostgreSQL UUID generation, no gem needed |
+| **HTTP Client** | `faraday` (if needed) | Standard Ruby HTTP client with middleware stack |
+| **Environment Config** | `dotenv-rails` | Development environment variables |
+| **Code Quality** | `rubocop-rails` + `brakeman` | Linting + security static analysis |
+
+---
+
+### Rails Architecture & Design Patterns
+
+**Project structure (Rails conventions + service layer):**
+```
+app/
+├── controllers/
+│   └── api/v1/          # Versioned API controllers (thin)
+├── models/              # AR models (validations, associations, scopes — NO business logic)
+├── services/            # Service classes (BookingService, SlotService, etc.)
+├── policies/            # Authorization logic (even with stub auth)
+├── serializers/         # Blueprinter serializers (explicit, no magic)
+├── jobs/                # Sidekiq jobs (BookingConfirmationJob, etc.)
+├── concerns/            # Shared model/controller concerns (Tenantable, Idempotent)
+├── errors/              # Custom error classes (OptimisticLockConflict, TenantViolation)
+└── validators/          # Custom validators (IdempotencyKeyValidator)
+```
+
+**Design patterns to apply:**
+- **Service Objects** — All business logic in `app/services/`. Controllers call services, services call models.
+- **Concerns for cross-cutting** — `Tenantable` (model concern for default_scope), `Authenticatable` (controller concern)
+- **Decorator/Presenter via Blueprinter** — API responses shaped by serializers, not models. Comment: "Serializers define the API contract. Never expose raw AR objects. Add new views (`:detailed`, `:minimal`) as needed."
+- **Command Pattern for bookings** — `BookingService.call(slot_id:, member:, idempotency_key:)` returns Result object
+- **Railway-oriented results** — Service returns `{ success: true, booking: }` or `{ success: false, error: }` — no exceptions for control flow
+- **Query Objects** — Complex queries in dedicated classes (e.g., `AvailableSlotsQuery`)
+- **Metaprogramming (judicious)** — `enum` for status fields, `delegate` for clean interfaces, `class_attribute` for config
+- **DRY via shared concerns** — `Timestampable`, `Versionable` (optimistic locking concern)
+
+**ActiveRecord best practices:**
+- `includes()` / `preload()` to prevent N+1 (use `strict_loading` in development)
+- `find_each` / `in_batches` for bulk operations (never `.all.each`)
+- `counter_cache` where applicable
+- Index all foreign keys + frequently queried columns
+- Composite indexes for multi-column lookups (`[mentor_id, start_time]`)
+- `explain` queries in development to verify index usage
+
+**Security hardening:**
+- `strong_parameters` (permit only expected params)
+- `Brakeman` in CI for static security analysis
+- Parameterized queries (ActiveRecord default — never string interpolation in `.where()`)
+- UUID primary keys (prevents enumeration attacks)
+- CORS restricted to frontend origin
+- Rate limiting via `rack-attack`
+- `Regexp.timeout` (Rails 8 default) prevents ReDoS
+
+**Memory & performance:**
+- Streaming responses for large result sets (if needed)
+- `pagy` for pagination (constant memory regardless of total count)
+- `pluck` for read-only column access (no AR object instantiation)
+- Redis connection pooling via `connection_pool` gem
+- Sidekiq concurrency tuned to match Puma workers
+- `jbuilder` avoided (memory-heavy); `blueprinter` is allocation-lean
+
+**Migration best practices with strong_migrations:**
+- All migrations validated by strong_migrations before execution
+- Indexes created concurrently (`disable_ddl_transaction!` + `algorithm: :concurrently`)
+- Column additions: never add with default on existing large tables (add column, backfill, then set default)
+- Column removals: `self.ignored_columns += ["column_name"]` in model first, remove migration in next deploy
+- Foreign keys added in separate migration from column creation
+- Use `safety_assured` block only with comment explaining why it's safe
+
+---
+
+### Docker Compose (Updated for Rails)
+
+```yaml
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: mentoring
+      POSTGRES_PASSWORD: mentoring
+      POSTGRES_DB: mentoring_development
+    ports: ["5432:5432"]
+    volumes: [postgres_data:/var/lib/postgresql/data]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U mentoring"]
+      interval: 5s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    ports: ["6379:6379"]
+    volumes: [redis_data:/data]
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      retries: 5
+
+  backend:
+    build: ./backend
+    environment:
+      DATABASE_URL: postgresql://mentoring:mentoring@postgres:5432/mentoring_development
+      REDIS_URL: redis://redis:6379/0
+      RAILS_ENV: production
+      SECRET_KEY_BASE: ${SECRET_KEY_BASE:-$(openssl rand -hex 64)}
+    ports: ["3000:3000"]
+    depends_on:
+      postgres: { condition: service_healthy }
+      redis: { condition: service_healthy }
+    command: >
+      sh -c "bin/rails db:prepare &&
+             bin/rails db:seed &&
+             bundle exec puma -C config/puma.rb"
+
+  sidekiq:
+    build: ./backend
+    environment:
+      DATABASE_URL: postgresql://mentoring:mentoring@postgres:5432/mentoring_development
+      REDIS_URL: redis://redis:6379/0
+      RAILS_ENV: production
+      SECRET_KEY_BASE: ${SECRET_KEY_BASE:-$(openssl rand -hex 64)}
+    depends_on:
+      postgres: { condition: service_healthy }
+      redis: { condition: service_healthy }
+    command: bundle exec sidekiq -C config/sidekiq.yml
+
+  frontend:
+    build: ./frontend
+    environment:
+      VITE_API_URL: http://localhost:3000/api/v1
+    ports: ["5173:5173"]
+    depends_on: [backend]
+
+volumes:
+  postgres_data:
+  redis_data:
+```
+
+**Note:** Sidekiq runs as a separate container (same image, different command) — proper production pattern. Backend serves API only via Puma.
+
+---
+
 ## DECISION FRAMEWORK
 
 After your responses, I'll score each option:
@@ -143,7 +349,7 @@ in the decision log.
 - Real loading / empty / error states
 - "My sessions" view (member + mentor perspectives)
 - Redis cache for slot listings with invalidation
-- Bull queue for async booking confirmations
+- Sidekiq for async booking confirmations
 - Structured logging + request correlation IDs
 - docker-compose up (frontend + backend + postgres + redis)
 - README: architecture, tradeoffs, AI usage, what I'd add with more time
@@ -194,7 +400,7 @@ slots
 ├── end_time: timestamp (UTC)
 ├── status: enum ['available', 'booked', 'cancelled']
 ├── buffer_minutes: int (default 0)
-├── version: int (default 1) — optimistic locking
+├── version: int (default 1) — optimistic locking (maps to Rails' `lock_version` convention)
 ├── created_at: timestamp
 ├── updated_at: timestamp
 ├── UNIQUE(mentor_id, start_time)
@@ -256,7 +462,7 @@ booking with 200 (not 201).
 | POST /api/v1/bookings/:id/reschedule | 5 | 1 minute | Prevent churn |
 | GET /api/v1/mentors/:id/slots | 100 | 1 minute | Protect cache |
 
-Implementation: `express-rate-limit` with Redis store for distributed 
+Implementation: `rack-attack` gem with Redis cache store for distributed 
 consistency (single instance in MVP, but store interface is correct).
 
 ---
@@ -289,13 +495,14 @@ Documented: Dynamic buffer admin UI is P2
 
 ## ASYNC / QUEUE ARCHITECTURE
 
-Queue: Bull (Redis-backed)
-Jobs: booking_created, booking_cancelled, booking_rescheduled
-Retry: 3 attempts, exponential backoff (2s, 4s, 8s)
-Transport: Console.log (MVP) → SendGrid (production)
+Queue: Sidekiq (Redis-backed)
+Jobs: BookingConfirmationJob, BookingCancellationJob, BookingRescheduleJob
+Retry: 3 attempts, exponential backoff (sidekiq_options retry: 3)
+Transport: Rails.logger (MVP) → ActionMailer + SendGrid (production)
 
-Why off request path: API &lt;100ms, booking succeeds independently of 
-notification delivery.
+Why off request path: API <100ms, booking succeeds independently of 
+notification delivery. Sidekiq processes jobs in a separate container
+with its own concurrency pool, isolated from Puma request threads.
 
 ---
 
@@ -304,35 +511,33 @@ notification delivery.
 ### Requirement
 `docker-compose up` must start the complete application:
 - PostgreSQL (migrations + seed data)
-- Redis (cache + queue)
-- Backend API (Express + Prisma)
+- Redis (cache + Sidekiq queue)
+- Backend API (Rails 8 + Puma)
+- Sidekiq worker (background job processing)
 - Frontend SPA (React + Vite)
-- Optional: Bull dashboard for queue monitoring
+- Optional: Sidekiq Web UI for queue monitoring (mounted at /sidekiq in development)
 
 ### Architecture
 ┌─────────────────────────────────────────────────────────────┐
 │                        Docker Network                        │
 │  ┌─────────────┐  ┌─────────────┐  ┌─────────────────────┐  │
-│  │  Postgres   │  │    Redis    │  │   Backend (Node)    │  │
+│  │  Postgres   │  │    Redis    │  │  Backend (Rails 8)  │  │
 │  │   :5432     │  │   :6379     │  │      :3000          │  │
-│  │  (migrations│  │ (cache+queue)│  │  (API + Bull worker)│  │
+│  │  (migrations│  │ (cache+queue)│  │  (Puma API server)  │  │
 │  │   on start) │  │             │  │                     │  │
 │  └─────────────┘  └─────────────┘  └─────────────────────┘  │
 │         ▲                ▲                  ▲               │
 │         └────────────────┴──────────────────┘               │
 │                                              │               │
-│                              ┌───────────────┘               │
-│                              ▼                               │
-│                    ┌─────────────────────┐                   │
-│                    │  Frontend (React)   │                   │
-│                    │      :5173           │                   │
-│                    │   (Vite dev server)   │                   │
+│                    ┌─────────────────────┐   │               │
+│                    │   Sidekiq Worker    │   │               │
+│                    │  (background jobs)  │───┘               │
 │                    └─────────────────────┘                   │
 │                              │                               │
 │                    ┌─────────┴─────────┐                     │
-│                    │  Bull Dashboard   │                     │
-│                    │      :3001       │                     │
-│                    │  (queue monitor)  │                     │
+│                    │  Frontend (React)  │                     │
+│                    │      :5173         │                     │
+│                    │  (Vite dev server) │                     │
 │                    └───────────────────┘                     │
 └─────────────────────────────────────────────────────────────┘
 
@@ -357,10 +562,11 @@ Response: {
 ## OBSERVABILITY (Detailed)
 
 ### Logging
-- Tool: Pino (structured JSON)
+- Tool: Lograge (structured JSON) + RequestStore (per-request context)
 - Fields: timestamp, level, message, correlation_id, user_id, org_id, 
   request_path, request_method, response_status, duration_ms
-- Output: stdout (Docker captures)
+- Output: stdout (Docker captures via Rails.logger)
+- Configuration: config/initializers/lograge.rb with custom_payload
 
 ### Metrics (Basic)
 | Metric | Type | Endpoint |
@@ -370,102 +576,34 @@ Response: {
 | db_query_duration_ms | Histogram | `/metrics` |
 | cache_hit_total | Counter | `/metrics` |
 | cache_miss_total | Counter | `/metrics` |
+| sidekiq_jobs_processed | Counter | Sidekiq Web UI |
+| sidekiq_jobs_failed | Counter | Sidekiq Web UI |
 
-Implementation: `prom-client` npm package. MVP: console.log metrics. 
-Production: Prometheus scrape endpoint.
+Implementation: `yabeda-rails` + `yabeda-sidekiq` + `yabeda-prometheus` gems.
+MVP: Lograge JSON logs to stdout. Production: Prometheus scrape endpoint + Sidekiq Web UI.
 
 
 ### Startup Order
 1. Postgres + Redis start with health checks
-2. Backend waits for healthy dependencies, runs migrations + seed
-3. Frontend starts once backend is up
-4. Bull dashboard starts for queue visibility
+2. Backend waits for healthy dependencies, runs `bin/rails db:prepare` + `bin/rails db:seed`
+3. Sidekiq worker starts after backend is healthy
+4. Frontend starts once backend is up
 
 ### Docker Compose Services
 
-```yaml
-version: '3.8'
+See "FINAL STACK DECISION > Docker Compose (Updated for Rails)" section above for the 
+canonical docker-compose.yml. The configuration uses:
+- `postgres:16-alpine` with healthcheck
+- `redis:7-alpine` with healthcheck  
+- `backend` (Rails 8 + Puma) — runs `bin/rails db:prepare && bin/rails db:seed && bundle exec puma`
+- `sidekiq` (same image, different entrypoint) — runs `bundle exec sidekiq`
+- `frontend` (React + Vite)
 
-services:
-  postgres:
-    image: postgres:15-alpine
-    environment:
-      POSTGRES_USER: mentoring
-      POSTGRES_PASSWORD: mentoring
-      POSTGRES_DB: mentoring
-    ports:
-      - "5432:5432"
-    volumes:
-      - postgres_data:/var/lib/postgresql/data
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U mentoring -d mentoring"]
-      interval: 5s
-      timeout: 5s
-      retries: 5
-
-  redis:
-    image: redis:7-alpine
-    ports:
-      - "6379:6379"
-    volumes:
-      - redis_data:/data
-    healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
-      interval: 5s
-      timeout: 5s
-      retries: 5
-
-  backend:
-    build: ./backend
-    environment:
-      DATABASE_URL: postgresql://mentoring:mentoring@postgres:5432/mentoring
-      REDIS_URL: redis://redis:6379
-    ports:
-      - "3000:3000"
-    volumes:
-      - ./backend:/app
-      - /app/node_modules
-    depends_on:
-      postgres:
-        condition: service_healthy
-      redis:
-        condition: service_healthy
-    command: &gt;
-      sh -c "npx prisma migrate deploy &&
-             npx prisma db seed &&
-             npm run dev"
-
-  frontend:
-    build: ./frontend
-    environment:
-      VITE_API_URL: http://localhost:3000/api/v1
-    ports:
-      - "5173:5173"
-    volumes:
-      - ./frontend:/app
-      - /app/node_modules
-    depends_on:
-      - backend
-
-  bull-dashboard:
-    image: beequeue/bull-monitor:latest
-    environment:
-      REDIS_URL: redis://redis:6379
-    ports:
-      - "3001:3000"
-    depends_on:
-      - redis
-
-volumes:
-  postgres_data:
-  redis_data:
-
-README addon
-## RUN INSTRUCTIONS
+### Run Instructions
 
 ```bash
 # 1. Clone and enter directory
-cd mentoring-mentoring-booking
+cd mentoring-session-booking
 
 # 2. Start all services
 docker-compose up
@@ -476,11 +614,12 @@ docker-compose up
 # 4. Access application
 # Frontend: http://localhost:5173
 # API: http://localhost:3000/api/v1
-# Bull Dashboard: http://localhost:3001
+# Sidekiq Web UI: http://localhost:3000/sidekiq (development only)
 
 # 5. Run tests
-docker-compose exec backend npm test
+docker-compose exec backend bundle exec rspec
 docker-compose exec frontend npm test
+```
 
 UI REFERENCE (GetGist Screenshots)
 I have screenshots of my GetGist app (cal.id/gowthamvel-palanivel) showing:
