@@ -1,0 +1,22 @@
+default: &default
+  adapter: postgresql
+  encoding: unicode
+  pool: <%= ENV.fetch("RAILS_MAX_THREADS") { 5 } %>
+
+development:
+  <<: *default
+  host: <%= ENV.fetch("DB_HOST", "localhost") %>
+  username: <%= ENV.fetch("DB_USERNAME", "mentoring") %>
+  password: <%= ENV.fetch("DB_PASSWORD", "mentoring") %>
+  database: mentoring_development
+
+test:
+  <<: *default
+  host: <%= ENV.fetch("DB_HOST", "localhost") %>
+  username: <%= ENV.fetch("DB_USERNAME", "mentoring") %>
+  password: <%= ENV.fetch("DB_PASSWORD", "mentoring") %>
+  database: mentoring_test
+
+production:
+  <<: *default
+  url: <%= ENV["DATABASE_URL"] %>
