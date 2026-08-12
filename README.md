@@ -310,6 +310,7 @@ mentoring-session-booking/
 - Terraform/CDK IaC, blue/green deployments with Kamal or ECS
 
 ### Features (P2)
+- **Reminder notifications** — Scheduled email + in-app reminders (24h and 1h before session). Implementation: `SessionReminderJob` runs on a Sidekiq cron schedule (`sidekiq-cron` gem), queries bookings where `slot.start_time` is within the reminder window, creates Notification records + delivers emails via BookingMailer. Respects user timezone and notification preferences. Idempotent (checks if reminder already sent via `notification_type + booking_id` uniqueness).
 - Real authentication (OAuth2 + JWT via Devise + Doorkeeper)
 - Google/Apple/Outlook calendar sync (OAuth for conflict detection)
 - Mentor settings page (notification preferences, buffer config)
