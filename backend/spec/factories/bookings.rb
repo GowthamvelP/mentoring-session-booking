@@ -1,7 +1,7 @@
 FactoryBot.define do
   factory :booking do
     association :slot, :booked
-    association :member, factory: [:user, :member]
+    association :member, factory: [ :user, :member ]
     organization { slot.organization }
     idempotency_key { SecureRandom.uuid }
     status { :confirmed }

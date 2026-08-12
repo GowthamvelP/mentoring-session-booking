@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { isFuture, parseISO } from 'date-fns'
 import { useMySessions } from '../hooks/useSessions'
 import { useCancelBooking } from '../hooks/useBooking'
+import { useAuth } from '../hooks/useAuth'
 import { useToast } from '../context/ToastContext'
 import { AppShell } from '../components/layout/AppShell'
 import { PageHeader } from '../components/layout/PageHeader'
@@ -12,13 +13,17 @@ import { EmptyState } from '../components/ui/EmptyState'
 import { ErrorState } from '../components/ui/ErrorState'
 import { PageTransition } from '../components/ui/PageTransition'
 import { Button } from '../components/ui/Button'
+import { CancelConfirmModal } from '../components/ui/CancelConfirmModal'
+import type { Booking } from '../api/types'
 
 export function MySessionsPage() {
   const navigate = useNavigate()
+  const { timezone } = useAuth()
   const [page, setPage] = useState(1)
   const { data, isLoading, isError, refetch } = useMySessions(page)
   const cancelMutation = useCancelBooking()
   const { showToast } = useToast()
+  const [cancelTarget, setCancelTarget] = useState<Booking | null>(null)
 
   const { upcoming, past } = useMemo(() => {
     if (!data?.data) return { upcoming: [], past: [] }
@@ -33,16 +38,33 @@ export function MySessionsPage() {
   }, [data])
 
   const handleCancel = (bookingId: string) => {
-    cancelMutation.mutate(bookingId, {
-      onSuccess: () => showToast('Session cancelled', 'success'),
-      onError: () => showToast('Failed to cancel session', 'error'),
+    // Show cancel confirmation modal instead of immediate cancel
+    const booking = data?.data.find((b) => b.id === bookingId)
+    if (booking) {
+      setCancelTarget(booking)
+    }
+  }
+
+  const handleConfirmCancel = () => {
+    if (!cancelTarget) return
+    cancelMutation.mutate(cancelTarget.id, {
+      onSuccess: () => {
+        showToast('Session cancelled', 'success')
+        setCancelTarget(null)
+      },
+      onError: () => {
+        showToast('Failed to cancel session', 'error')
+        setCancelTarget(null)
+      },
     })
   }
 
   const handleReschedule = (bookingId: string) => {
     const booking = data?.data.find((b) => b.id === bookingId)
     if (booking?.mentor?.id) {
-      navigate(`/mentors/${booking.mentor.id}/slots?reschedule=${bookingId}`)
+      navigate(`/mentors/${booking.mentor.id}/slots?reschedule=${bookingId}`, {
+        state: { mentorName: booking.mentor.name }
+      })
     }
   }
 
@@ -132,6 +154,18 @@ export function MySessionsPage() {
           )}
         </PageTransition>
       )}
+
+      {/* Cancel confirmation modal */}
+      <CancelConfirmModal
+        isOpen={!!cancelTarget}
+        mentorName={cancelTarget?.mentor?.name || 'Mentor'}
+        slotStartTime={cancelTarget?.slot?.start_time || ''}
+        slotEndTime={cancelTarget?.slot?.end_time || ''}
+        timezone={cancelTarget?.booked_timezone || timezone}
+        isLoading={cancelMutation.isPending}
+        onConfirm={handleConfirmCancel}
+        onCancel={() => setCancelTarget(null)}
+      />
     </AppShell>
   )
 }

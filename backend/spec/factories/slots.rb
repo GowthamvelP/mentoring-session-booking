@@ -1,6 +1,6 @@
 FactoryBot.define do
   factory :slot do
-    association :mentor, factory: [:user, :mentor]
+    association :mentor, factory: [ :user, :mentor ]
     organization { mentor.organization }
     start_time { 1.day.from_now.beginning_of_hour }
     end_time { start_time + 1.hour }

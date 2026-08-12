@@ -10,19 +10,19 @@ RSpec.describe "Mentors Search API", type: :request do
   # Create mentors with distinctive names and expertise
   let!(:john) do
     create(:user, :mentor, organization: organization, name: "John Smith").tap do |u|
-      u.mentor_profile.update!(expertise: ["Ruby on Rails", "System Design", "PostgreSQL"])
+      u.mentor_profile.update!(expertise: [ "Ruby on Rails", "System Design", "PostgreSQL" ])
     end
   end
 
   let!(:jane) do
     create(:user, :mentor, organization: organization, name: "Jane Anderson").tap do |u|
-      u.mentor_profile.update!(expertise: ["Python", "Machine Learning", "Data Science"])
+      u.mentor_profile.update!(expertise: [ "Python", "Machine Learning", "Data Science" ])
     end
   end
 
   let!(:robert) do
     create(:user, :mentor, organization: organization, name: "Robert Johnson").tap do |u|
-      u.mentor_profile.update!(expertise: ["JavaScript", "React", "Node.js"])
+      u.mentor_profile.update!(expertise: [ "JavaScript", "React", "Node.js" ])
     end
   end
 

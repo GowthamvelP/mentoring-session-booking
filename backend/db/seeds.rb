@@ -46,13 +46,13 @@ puts "  ✓ Created #{orgs.size} organizations"
 
 # === Mentors ===
 mentors_data = [
-  { org: 0, name: "Sarah Chen", email: "sarah.chen@techmentor.io", bio: "Staff Engineer with 15 years in distributed systems. Previously at AWS and Stripe. Passionate about helping engineers think at scale.", expertise: ["System Design", "Distributed Systems", "Career Growth", "Technical Leadership"] },
-  { org: 0, name: "Marcus Williams", email: "marcus.williams@techmentor.io", bio: "Engineering Manager turned IC. 12 years of experience. Passionate about mentoring early-career engineers and building engineering culture.", expertise: ["Ruby on Rails", "API Design", "Code Review", "Engineering Culture", "Team Building"] },
-  { org: 0, name: "Elena Rodriguez", email: "elena.rodriguez@techmentor.io", bio: "Senior Platform Engineer focused on observability and reliability. Built monitoring systems for 100M+ request/day platforms.", expertise: ["Observability", "SRE", "Kubernetes", "Incident Response"] },
-  { org: 1, name: "Priya Patel", email: "priya.patel@acme.io", bio: "Principal Engineer specializing in data-intensive applications and ML infrastructure. Built real-time pipelines processing 50TB/day.", expertise: ["Python", "Machine Learning", "Data Engineering", "System Architecture", "Apache Spark"] },
-  { org: 1, name: "David Kim", email: "david.kim@acme.io", bio: "Full-stack architect with deep expertise in React ecosystems and frontend performance. Shipped apps used by 10M+ users.", expertise: ["React", "TypeScript", "Frontend Architecture", "Performance Optimization", "Accessibility"] },
-  { org: 2, name: "James Morrison", email: "james.morrison@globallearn.io", bio: "VP of Engineering with 20 years experience across startups and enterprise. Coaches engineers on career strategy and leadership transitions.", expertise: ["Engineering Leadership", "Career Strategy", "VP/CTO Path", "Organizational Design"] },
-  { org: 2, name: "Aisha Okonkwo", email: "aisha.okonkwo@globallearn.io", bio: "Security architect and former CISO. Specializes in building secure-by-default development practices and AppSec programs.", expertise: ["Application Security", "Threat Modeling", "Security Architecture", "DevSecOps"] }
+  { org: 0, name: "Sarah Chen", email: "sarah.chen@techmentor.io", bio: "Staff Engineer with 15 years in distributed systems. Previously at AWS and Stripe. Passionate about helping engineers think at scale.", expertise: [ "System Design", "Distributed Systems", "Career Growth", "Technical Leadership" ] },
+  { org: 0, name: "Marcus Williams", email: "marcus.williams@techmentor.io", bio: "Engineering Manager turned IC. 12 years of experience. Passionate about mentoring early-career engineers and building engineering culture.", expertise: [ "Ruby on Rails", "API Design", "Code Review", "Engineering Culture", "Team Building" ] },
+  { org: 0, name: "Elena Rodriguez", email: "elena.rodriguez@techmentor.io", bio: "Senior Platform Engineer focused on observability and reliability. Built monitoring systems for 100M+ request/day platforms.", expertise: [ "Observability", "SRE", "Kubernetes", "Incident Response" ] },
+  { org: 1, name: "Priya Patel", email: "priya.patel@acme.io", bio: "Principal Engineer specializing in data-intensive applications and ML infrastructure. Built real-time pipelines processing 50TB/day.", expertise: [ "Python", "Machine Learning", "Data Engineering", "System Architecture", "Apache Spark" ] },
+  { org: 1, name: "David Kim", email: "david.kim@acme.io", bio: "Full-stack architect with deep expertise in React ecosystems and frontend performance. Shipped apps used by 10M+ users.", expertise: [ "React", "TypeScript", "Frontend Architecture", "Performance Optimization", "Accessibility" ] },
+  { org: 2, name: "James Morrison", email: "james.morrison@globallearn.io", bio: "VP of Engineering with 20 years experience across startups and enterprise. Coaches engineers on career strategy and leadership transitions.", expertise: [ "Engineering Leadership", "Career Strategy", "VP/CTO Path", "Organizational Design" ] },
+  { org: 2, name: "Aisha Okonkwo", email: "aisha.okonkwo@globallearn.io", bio: "Security architect and former CISO. Specializes in building secure-by-default development practices and AppSec programs.", expertise: [ "Application Security", "Threat Modeling", "Security Architecture", "DevSecOps" ] }
 ]
 
 # === Members ===
@@ -129,7 +129,7 @@ mentors.each do |mentor|
       slot_count += 1
 
       # Mid-morning slot (11:00-12:00) — Mon/Wed/Fri
-      if [1, 3, 5].include?(date.wday)
+      if [ 1, 3, 5 ].include?(date.wday)
         Slot.create!(
           mentor: mentor,
           organization: mentor.organization,
@@ -151,7 +151,7 @@ mentors.each do |mentor|
       slot_count += 1
 
       # Late afternoon slot (16:00-17:00) — Tue/Thu
-      if [2, 4].include?(date.wday)
+      if [ 2, 4 ].include?(date.wday)
         Slot.create!(
           mentor: mentor,
           organization: mentor.organization,

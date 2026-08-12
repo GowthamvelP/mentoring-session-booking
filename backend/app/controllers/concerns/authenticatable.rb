@@ -30,7 +30,7 @@ module Authenticatable
     Current.user = Current.organization.users.find_by(id: user_id)
     unless Current.user
       render json: { error: "Invalid user", details: { user_id: "User not found in organization" } }, status: :unauthorized
-      return
+      nil
     end
   end
 

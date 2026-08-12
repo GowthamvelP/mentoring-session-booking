@@ -47,8 +47,8 @@ RSpec.describe "Mentors API", type: :request do
       let!(:mentor2) { create(:user, :mentor, organization: organization, name: "Jane Python Expert") }
 
       before do
-        mentor.mentor_profile.update!(expertise: ["Ruby on Rails", "System Design"])
-        mentor2.mentor_profile.update!(expertise: ["Python", "Machine Learning"])
+        mentor.mentor_profile.update!(expertise: [ "Ruby on Rails", "System Design" ])
+        mentor2.mentor_profile.update!(expertise: [ "Python", "Machine Learning" ])
       end
 
       it "filters mentors by name" do

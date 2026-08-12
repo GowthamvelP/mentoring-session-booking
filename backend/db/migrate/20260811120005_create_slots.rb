@@ -10,8 +10,8 @@ class CreateSlots < ActiveRecord::Migration[8.0]
       t.timestamps
     end
 
-    add_index :slots, [:mentor_id, :start_time], unique: true
-    add_index :slots, [:mentor_id, :status, :start_time]
+    add_index :slots, [ :mentor_id, :start_time ], unique: true
+    add_index :slots, [ :mentor_id, :status, :start_time ]
     add_index :slots, :start_time
   end
 end

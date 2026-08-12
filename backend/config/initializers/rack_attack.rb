@@ -39,7 +39,7 @@ class Rack::Attack
         "Content-Type" => "application/json",
         "Retry-After" => retry_after.to_s
       },
-      [{ error: "Rate limit exceeded", details: { retry_after: retry_after } }.to_json]
+      [ { error: "Rate limit exceeded", details: { retry_after: retry_after } }.to_json ]
     ]
   end
 end

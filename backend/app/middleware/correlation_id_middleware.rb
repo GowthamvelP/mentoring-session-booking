@@ -19,6 +19,6 @@ class CorrelationIdMiddleware
     status, headers, body = @app.call(env)
 
     headers["X-Request-Id"] = correlation_id
-    [status, headers, body]
+    [ status, headers, body ]
   end
 end

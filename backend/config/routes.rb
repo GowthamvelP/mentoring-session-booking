@@ -14,17 +14,17 @@ Rails.application.routes.draw do
   namespace :api do
     namespace :v1 do
       # Public endpoints (no auth required)
-      resources :organizations, only: [:index]
+      resources :organizations, only: [ :index ]
       get "organizations/:organization_id/users", to: "organizations#users"
       post "auth/select-org", to: "auth#select_org"
       get "health", to: "health#show"
 
       # Authenticated endpoints
-      resources :mentors, only: [:index] do
-        resources :slots, only: [:index]
+      resources :mentors, only: [ :index ] do
+        resources :slots, only: [ :index ]
       end
 
-      resources :bookings, only: [:create] do
+      resources :bookings, only: [ :create ] do
         member do
           patch :cancel
           post :reschedule

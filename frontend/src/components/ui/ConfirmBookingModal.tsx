@@ -10,6 +10,9 @@ interface ConfirmBookingModalProps {
   isLoading: boolean
   onConfirm: () => void
   onCancel: () => void
+  title?: string
+  description?: string
+  confirmLabel?: string
 }
 
 export function ConfirmBookingModal({
@@ -21,18 +24,23 @@ export function ConfirmBookingModal({
   isLoading,
   onConfirm,
   onCancel,
+  title = 'Confirm Booking',
+  description,
+  confirmLabel = 'Confirm',
 }: ConfirmBookingModalProps) {
   if (!isOpen) return null
 
   const date = formatSlotDate(slotStartTime, timezone)
-  const timeRange = `${formatSlotTime(slotStartTime, timezone)} \u2013 ${formatSlotTime(slotEndTime, timezone)}`
+  const timeRange = `${formatSlotTime(slotStartTime, timezone)} – ${formatSlotTime(slotEndTime, timezone)}`
   const tzAbbr = getTimezoneAbbreviation(timezone)
+
+  const defaultDescription = `Book a session with ${mentorName}?`
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm" onClick={onCancel}>
       <div className="w-full max-w-sm rounded-xl border border-surface-border bg-surface-card p-6 shadow-2xl animate-page-enter" onClick={(e) => e.stopPropagation()}>
-        <h3 className="text-lg font-bold text-text">Confirm Booking</h3>
-        <p className="mt-1 text-sm text-text-muted">Book a session with {mentorName}?</p>
+        <h3 className="text-lg font-bold text-text">{title}</h3>
+        <p className="mt-1 text-sm text-text-muted">{description || defaultDescription}</p>
 
         <div className="mt-4 rounded-lg border border-surface-border bg-surface p-3">
           <p className="text-sm font-medium text-text">{date}</p>
@@ -44,7 +52,7 @@ export function ConfirmBookingModal({
             Cancel
           </Button>
           <Button className="flex-1" onClick={onConfirm} loading={isLoading}>
-            Confirm
+            {confirmLabel}
           </Button>
         </div>
       </div>

@@ -59,55 +59,61 @@ export function MentorSlotsPage() {
 
   const handleSlotClick = useCallback(
     (slot: Slot) => {
-      if (isRescheduleMode && rescheduleBookingId) {
-        // RESCHEDULE MODE: proceed directly (no pre-confirm modal needed)
-        setBookingSlotId(slot.id)
-        rescheduleMutation.mutate(
-          { bookingId: rescheduleBookingId, newSlotId: slot.id },
-          {
-            onSuccess: () => {
-              showToast('Session rescheduled successfully!', 'success')
-              setBookingSlotId(null)
-              setTimeout(() => navigate('/sessions'), 2000)
-            },
-            onError: (error) => {
-              const message = (error as { error?: string })?.error || 'Reschedule failed'
-              showToast(message, 'error')
-              setBookingSlotId(null)
-            },
-          }
-        )
-      } else {
-        // NORMAL MODE: Show pre-booking confirmation modal
-        setSelectedSlot(slot)
-      }
+      // Both booking and reschedule show confirmation modal first
+      setSelectedSlot(slot)
     },
-    [rescheduleMutation, showToast, navigate, isRescheduleMode, rescheduleBookingId]
+    []
   )
 
   const handleConfirmBooking = useCallback(() => {
     if (!selectedSlot) return
 
-    setBookingSlotId(selectedSlot.id)
-    bookMutation.mutate(selectedSlot.id, {
-      onSuccess: () => {
-        setBookingSlotId(null)
-        setSelectedSlot(null)
-        // Show success confirmation modal with calendar options
-        setConfirmedBooking({
-          mentorName,
-          startTime: selectedSlot.start_time,
-          endTime: selectedSlot.end_time,
-        })
-      },
-      onError: (error) => {
-        const message = (error as { error?: string })?.error || 'Booking failed'
-        showToast(message, 'error')
-        setBookingSlotId(null)
-        setSelectedSlot(null)
-      },
-    })
-  }, [selectedSlot, bookMutation, showToast, mentorName])
+    if (isRescheduleMode && rescheduleBookingId) {
+      // RESCHEDULE MODE
+      setBookingSlotId(selectedSlot.id)
+      rescheduleMutation.mutate(
+        { bookingId: rescheduleBookingId, newSlotId: selectedSlot.id },
+        {
+          onSuccess: () => {
+            setBookingSlotId(null)
+            setSelectedSlot(null)
+            // Show success confirmation modal
+            setConfirmedBooking({
+              mentorName,
+              startTime: selectedSlot.start_time,
+              endTime: selectedSlot.end_time,
+            })
+          },
+          onError: (error) => {
+            const message = (error as { error?: string })?.error || 'Reschedule failed'
+            showToast(message, 'error')
+            setBookingSlotId(null)
+            setSelectedSlot(null)
+          },
+        }
+      )
+    } else {
+      // NORMAL BOOKING MODE
+      setBookingSlotId(selectedSlot.id)
+      bookMutation.mutate(selectedSlot.id, {
+        onSuccess: () => {
+          setBookingSlotId(null)
+          setSelectedSlot(null)
+          setConfirmedBooking({
+            mentorName,
+            startTime: selectedSlot.start_time,
+            endTime: selectedSlot.end_time,
+          })
+        },
+        onError: (error) => {
+          const message = (error as { error?: string })?.error || 'Booking failed'
+          showToast(message, 'error')
+          setBookingSlotId(null)
+          setSelectedSlot(null)
+        },
+      })
+    }
+  }, [selectedSlot, bookMutation, rescheduleMutation, showToast, mentorName, isRescheduleMode, rescheduleBookingId])
 
   const handleCancelConfirm = useCallback(() => {
     setSelectedSlot(null)
@@ -178,16 +184,19 @@ export function MentorSlotsPage() {
         )}
       </div>
 
-      {/* Pre-booking confirmation modal */}
+      {/* Pre-booking/reschedule confirmation modal */}
       <ConfirmBookingModal
         isOpen={!!selectedSlot}
         mentorName={mentorName}
         slotStartTime={selectedSlot?.start_time || ''}
         slotEndTime={selectedSlot?.end_time || ''}
         timezone={timezone}
-        isLoading={bookMutation.isPending}
+        isLoading={isRescheduleMode ? rescheduleMutation.isPending : bookMutation.isPending}
         onConfirm={handleConfirmBooking}
         onCancel={handleCancelConfirm}
+        title={isRescheduleMode ? 'Confirm Reschedule' : 'Confirm Booking'}
+        description={isRescheduleMode ? `Reschedule your session with ${mentorName} to this time?` : undefined}
+        confirmLabel={isRescheduleMode ? 'Reschedule' : 'Confirm'}
       />
 
       {/* Post-booking success modal with calendar options */}

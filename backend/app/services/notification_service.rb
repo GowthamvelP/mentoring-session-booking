@@ -28,7 +28,7 @@ class NotificationService
     # Notify member + mentor that a booking is rescheduled
     def booking_rescheduled(old_booking, new_booking)
       tz = new_booking.organization.timezone
-      notify(:booking_rescheduled, new_booking, recipients_from: [new_booking.member, new_booking.slot.mentor]) do |_b|
+      notify(:booking_rescheduled, new_booking, recipients_from: [ new_booking.member, new_booking.slot.mentor ]) do |_b|
         "Session rescheduled: #{format_time(old_booking.slot.start_time, tz)} → #{format_time(new_booking.slot.start_time, tz)}"
       end
     end
@@ -36,7 +36,7 @@ class NotificationService
     private
 
     def notify(type, booking, recipients_from: nil)
-      recipients = recipients_from || [booking.member, booking.slot.mentor]
+      recipients = recipients_from || [ booking.member, booking.slot.mentor ]
       message = yield(booking)
 
       Rails.logger.info(
