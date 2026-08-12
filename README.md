@@ -327,9 +327,14 @@ mentoring-session-booking/
 - Natural language booking via LLM function calling
 - Codebase RAG for AI self-onboarding
 
-### Operational
-- Prometheus metrics (yabeda-rails + yabeda-sidekiq)
-- Full E2E test suite (Playwright)
+### Observability & Metrics (P2)
+- **Prometheus `/metrics` endpoint** — `yabeda-rails` + `yabeda-sidekiq` + `yabeda-prometheus` gems. Exposes: `http_requests_total`, `http_request_duration_seconds` (histogram), `sidekiq_jobs_processed_total`, `sidekiq_jobs_failed_total`, `cache_hit_ratio`. Scraped by Prometheus, visualized in Grafana. Implementation: add gems, create `config/initializers/yabeda.rb` with metric definitions, mount `Yabeda::Prometheus::Exporter` at `/metrics`.
+- **Coverage reports** — SimpleCov generates HTML reports locally (`backend/coverage/`). In CI, uploaded as artifacts via `actions/upload-artifact@v4`. Coverage threshold enforced at 90% — build fails if below. Reports are gitignored (regenerated on every test run).
+
+### E2E Testing (P2)
+- **Playwright test suite** — Full browser automation covering: org selection → mentor browse → slot booking → confirmation modal → session list → cancel → reschedule flow. Implementation: `npx playwright init`, configure headless Chromium in Docker (`playwright.config.ts`), MSW disabled (hits real API against test DB). CI: separate job with `services: [postgres, redis, backend]`, runs after unit tests pass. Covers: timezone selector interaction, notification bell updates, optimistic UI rollback on conflict.
+
+### Additional Operational
 - CI/CD pipeline (GitHub Actions with matrix testing)
 - Database-level row-level security as additional tenant isolation
 - Audit trail for all booking mutations (paper_trail gem)
