@@ -111,7 +111,18 @@ class NotificationService
       Rails.logger.error("NotificationService: failed to create notification — #{e.message}")
     end
 
-    def format_time(time, timezone)
+# Resolve the best timezone for a recipient:
+# 1. User's personal timezone preference (if set)
+# 2. Booking timezone (what was selected at booking time)
+# 3. Organization timezone (org-level default)
+# 4. UTC (safe fallback)
+# This mirrors Google Calendar / Calendly behavior: each person
+# sees events in THEIR timezone, not the booker's timezone.
+def recipient_timezone(user, booking)
+  user.timezone.presence || booking.booked_timezone || booking.organization.timezone || "UTC"
+end
+
+def format_time(time, timezone)
       # Resolve deprecated timezone aliases (e.g., Asia/Calcutta → Asia/Kolkata)
       resolved = TIMEZONE_ALIASES[timezone] || timezone
       tz = ActiveSupport::TimeZone[resolved] || ActiveSupport::TimeZone["UTC"]

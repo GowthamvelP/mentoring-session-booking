@@ -12,7 +12,7 @@ class BookingMailer < ApplicationMailer
     @mentor = booking.slot.mentor
     @member = booking.member
     @slot = booking.slot
-    @timezone = booking.booked_timezone || booking.organization.timezone
+    @timezone = recipient.timezone.presence || recipient.timezone.presence || booking.booked_timezone || booking.organization.timezone || "UTC" || "UTC"
     @time_display = format_time(@slot.start_time, @timezone)
 
     mail(
@@ -27,7 +27,7 @@ class BookingMailer < ApplicationMailer
     @mentor = booking.slot.mentor
     @member = booking.member
     @slot = booking.slot
-    @timezone = booking.booked_timezone || booking.organization.timezone
+    @timezone = recipient.timezone.presence || booking.booked_timezone || booking.organization.timezone || "UTC"
     @time_display = format_time(@slot.start_time, @timezone)
     @reason = booking.cancellation_reason
 
@@ -43,7 +43,7 @@ class BookingMailer < ApplicationMailer
     @new_booking = new_booking
     @mentor = new_booking.slot.mentor
     @member = new_booking.member
-    @timezone = new_booking.booked_timezone || new_booking.organization.timezone
+    @timezone = recipient.timezone.presence || new_booking.booked_timezone || new_booking.organization.timezone || "UTC"
     @old_time = format_time(old_booking.slot.start_time, @timezone)
     @new_time = format_time(new_booking.slot.start_time, @timezone)
 
