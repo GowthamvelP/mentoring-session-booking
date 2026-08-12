@@ -10,13 +10,16 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_08_11_120009) do
+ActiveRecord::Schema[8.1].define(version: 2026_08_11_120013) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
+  enable_extension "pg_trgm"
   enable_extension "pgcrypto"
 
   create_table "bookings", id: :uuid, default: -> { "gen_random_uuid()" }, force: :cascade do |t|
     t.datetime "booked_at", null: false
+    t.string "booked_timezone"
+    t.text "cancellation_reason"
     t.datetime "cancelled_at"
     t.datetime "created_at", null: false
     t.string "idempotency_key", null: false
@@ -26,6 +29,8 @@ ActiveRecord::Schema[8.1].define(version: 2026_08_11_120009) do
     t.string "status", default: "confirmed", null: false
     t.datetime "updated_at", null: false
     t.index ["idempotency_key"], name: "index_bookings_on_idempotency_key", unique: true
+    t.index ["member_id", "organization_id", "status"], name: "index_bookings_on_member_org_status"
+    t.index ["member_id", "status"], name: "index_bookings_on_member_id_and_status"
     t.index ["member_id"], name: "index_bookings_on_member_id"
     t.index ["organization_id"], name: "index_bookings_on_organization_id"
     t.index ["slot_id"], name: "index_bookings_on_slot_id"
@@ -37,6 +42,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_08_11_120009) do
     t.string "expertise", default: [], null: false, array: true
     t.datetime "updated_at", null: false
     t.uuid "user_id", null: false
+    t.index ["expertise"], name: "index_mentor_profiles_on_expertise_gin", using: :gin
     t.index ["user_id"], name: "index_mentor_profiles_on_user_id", unique: true
   end
 
@@ -73,6 +79,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_08_11_120009) do
     t.string "role", default: "member", null: false
     t.string "timezone"
     t.datetime "updated_at", null: false
+    t.index ["name"], name: "index_users_on_name_trgm", opclass: :gin_trgm_ops, using: :gin
     t.index ["organization_id", "email"], name: "index_users_on_organization_id_and_email", unique: true
     t.index ["organization_id"], name: "index_users_on_organization_id"
   end
