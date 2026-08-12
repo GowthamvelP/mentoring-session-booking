@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_08_11_120013) do
+ActiveRecord::Schema[8.1].define(version: 2026_08_12_120001) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
   enable_extension "pg_trgm"
@@ -54,6 +54,20 @@ ActiveRecord::Schema[8.1].define(version: 2026_08_11_120013) do
     t.datetime "updated_at", null: false
   end
 
+  create_table "pre_session_briefs", id: :uuid, default: -> { "gen_random_uuid()" }, force: :cascade do |t|
+    t.uuid "booking_id", null: false
+    t.integer "completion_tokens"
+    t.text "content"
+    t.datetime "created_at", null: false
+    t.text "error_message"
+    t.string "model_used"
+    t.integer "prompt_tokens"
+    t.string "status", default: "pending", null: false
+    t.integer "total_tokens"
+    t.datetime "updated_at", null: false
+    t.index ["booking_id"], name: "index_pre_session_briefs_on_booking_id", unique: true
+  end
+
   create_table "slots", id: :uuid, default: -> { "gen_random_uuid()" }, force: :cascade do |t|
     t.integer "buffer_minutes", default: 15
     t.datetime "created_at", null: false
@@ -88,6 +102,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_08_11_120013) do
   add_foreign_key "bookings", "slots"
   add_foreign_key "bookings", "users", column: "member_id"
   add_foreign_key "mentor_profiles", "users"
+  add_foreign_key "pre_session_briefs", "bookings"
   add_foreign_key "slots", "organizations"
   add_foreign_key "slots", "users", column: "mentor_id"
   add_foreign_key "users", "organizations"

@@ -74,6 +74,7 @@ class BookingService
     # 3. Post-commit operations (outside transaction)
     invalidate_slot_cache(booking.slot.mentor_id)
     enqueue_confirmation_job(booking)
+    enqueue_brief_job(booking)
 
     Rails.logger.debug { "BookingService: booking created successfully, id=#{booking.id}, slot=#{@slot_id}" }
 
@@ -100,6 +101,10 @@ class BookingService
 
   def enqueue_confirmation_job(booking)
     BookingConfirmationJob.perform_later(booking.id)
+  end
+
+  def enqueue_brief_job(booking)
+    BookingBriefJob.perform_later(booking.id)
   end
 
   # Custom error for slot unavailability (keeps exception hierarchy clean)

@@ -36,6 +36,12 @@ Rails.application.routes.draw do
         get "mentor_sessions", to: "sessions#mentor_sessions"
         patch "timezone", to: "sessions#update_timezone"
       end
+
+      namespace :ai do
+        get "context", to: "context#show"
+        get "mcp/tools", to: "mcp#tools"
+        post "mcp/call", to: "mcp#call"
+      end
     end
   end
 end
