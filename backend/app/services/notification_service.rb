@@ -10,6 +10,15 @@
 #   NotificationService.booking_cancelled(booking)
 #   NotificationService.booking_rescheduled(old_booking, new_booking)
 class NotificationService
+  # Deprecated IANA timezone aliases that some systems still emit
+  TIMEZONE_ALIASES = {
+    "Asia/Calcutta" => "Asia/Kolkata",
+    "US/Eastern" => "America/New_York",
+    "US/Central" => "America/Chicago",
+    "US/Pacific" => "America/Los_Angeles",
+    "US/Mountain" => "America/Denver"
+  }.freeze
+
   class << self
     def booking_confirmed(booking)
       mentor = booking.slot.mentor
@@ -103,7 +112,10 @@ class NotificationService
     end
 
     def format_time(time, timezone)
-      time.in_time_zone(timezone).strftime("%B %d, %Y at %I:%M %p %Z")
+      # Resolve deprecated timezone aliases (e.g., Asia/Calcutta → Asia/Kolkata)
+      resolved = TIMEZONE_ALIASES[timezone] || timezone
+      tz = ActiveSupport::TimeZone[resolved] || ActiveSupport::TimeZone["UTC"]
+      time.in_time_zone(tz).strftime("%B %d, %Y at %I:%M %p %Z")
     end
   end
 end
