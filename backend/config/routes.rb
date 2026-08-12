@@ -8,6 +8,9 @@ Rails.application.routes.draw do
     mount Sidekiq::Web => "/sidekiq"
   end
 
+  # Email viewer in development — browse sent emails at /letter_opener
+  mount LetterOpenerWeb::Engine, at: "/letter_opener" if Rails.env.development?
+
   # Default health check
   get "up" => "rails/health#show", as: :rails_health_check
 

@@ -60,6 +60,7 @@ group :development, :test do
   gem "shoulda-matchers"
   gem "rantly"
   gem "database_cleaner-active_record"
+  gem "letter_opener_web"
 end
 
 group :test do

@@ -80,6 +80,9 @@ class BookingService
     # Synchronous: create in-app notifications (instant for frontend polling)
     NotificationService.booking_confirmed(booking)
 
+    # Async: email delivery via ActionMailer (off request path)
+    BookingConfirmationJob.perform_later(booking.id)
+
     # Async: AI brief generation (non-blocking, separate queue)
     BookingBriefJob.perform_later(booking.id)
 

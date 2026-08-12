@@ -62,6 +62,9 @@ class CancellationService
     # Synchronous: create in-app notifications (instant for frontend)
     NotificationService.booking_cancelled(@booking)
 
+    # Async: email delivery
+    BookingCancellationJob.perform_later(@booking.id)
+
     Rails.logger.debug { "CancellationService: booking=#{@booking.id} cancelled successfully" }
 
     { success: true, booking: @booking }

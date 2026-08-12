@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <style>
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #1a1a2e; color: #e0e0e0; padding: 20px; }
+    .container { max-width: 600px; margin: 0 auto; background: #16213e; border-radius: 12px; padding: 32px; border: 1px solid #2a2a4a; }
+    .header { text-align: center; margin-bottom: 24px; }
+    .icon { font-size: 48px; margin-bottom: 12px; }
+    h1 { color: #f59e0b; font-size: 22px; margin: 0; }
+    .details { background: #1a1a2e; border-radius: 8px; padding: 16px; margin: 20px 0; border: 1px solid #2a2a4a; }
+    .label { color: #888; font-size: 12px; text-transform: uppercase; margin-bottom: 4px; }
+    .value { color: #e0e0e0; font-size: 16px; font-weight: 500; }
+    .old-time { text-decoration: line-through; color: #888; }
+    .new-time { color: #6366f1; font-weight: 600; }
+    .arrow { color: #f59e0b; margin: 0 8px; }
+    .footer { text-align: center; margin-top: 24px; color: #666; font-size: 12px; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <div class="icon">🔄</div>
+      <h1>Session Rescheduled</h1>
+    </div>
+
+    <p>A mentoring session has been moved to a new time.</p>
+
+    <div class="details">
+      <div class="label">Mentor</div>
+      <div class="value"><%= @mentor.name %></div>
+      <br>
+      <div class="label">Member</div>
+      <div class="value"><%= @member.name %></div>
+      <br>
+      <div class="label">Time Change</div>
+      <div class="value">
+        <span class="old-time"><%= @old_time %></span>
+        <span class="arrow">→</span>
+        <span class="new-time"><%= @new_time %></span>
+      </div>
+    </div>
+
+    <p style="color: #888;">Please update your calendar accordingly.</p>
+
+    <div class="footer">
+      <p>MentorBook — <%= @new_booking.organization.name %></p>
+    </div>
+  </div>
+</body>
+</html>

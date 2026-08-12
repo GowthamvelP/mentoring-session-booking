@@ -84,6 +84,9 @@ class RescheduleService
     # Synchronous: create in-app notifications (instant for frontend)
     NotificationService.booking_rescheduled(@booking, new_booking)
 
+    # Async: email delivery
+    BookingRescheduleJob.perform_later(@booking.id, new_booking.id)
+
     Rails.logger.debug { "RescheduleService: reschedule successful — old_booking=#{@booking.id}, new_booking=#{new_booking.id}" }
 
     { success: true, booking: new_booking, old_booking: @booking }
