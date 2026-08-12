@@ -128,5 +128,63 @@ RSpec.describe BookingService, type: :service do
         expect(result[:status]).to eq(:unprocessable_entity)
       end
     end
+
+    context "buffer validation" do
+      it "rejects booking when buffer is violated" do
+        # Create a booked slot for the same mentor
+        booked_slot = create(:slot, mentor: mentor, organization: organization,
+                             start_time: 2.days.from_now.beginning_of_hour,
+                             end_time: 2.days.from_now.beginning_of_hour + 1.hour,
+                             status: :available, buffer_minutes: 15)
+        # Mark it as booked after creation to avoid create-time validation
+        booked_slot.update_column(:status, "booked")
+
+        # This slot starts only 5 min after the booked one ends (violates 15 min buffer)
+        # Use build + save(validate: false) to bypass create-time overlap validation
+        target_slot = Slot.new(
+          mentor: mentor,
+          organization: organization,
+          start_time: booked_slot.end_time + 5.minutes,
+          end_time: booked_slot.end_time + 65.minutes,
+          status: :available,
+          buffer_minutes: 15
+        )
+        target_slot.save!(validate: false)
+
+        result = described_class.call(
+          slot_id: target_slot.id,
+          member: member,
+          idempotency_key: SecureRandom.uuid
+        )
+
+        expect(result[:success]).to be false
+        expect(result[:error]).to include("Buffer")
+        expect(result[:status]).to eq(:conflict)
+      end
+
+      it "allows booking when buffer is respected" do
+        # Create a booked slot for the same mentor
+        booked_slot = create(:slot, mentor: mentor, organization: organization,
+                             start_time: 3.days.from_now.beginning_of_hour,
+                             end_time: 3.days.from_now.beginning_of_hour + 1.hour,
+                             status: :available, buffer_minutes: 15)
+        booked_slot.update_column(:status, "booked")
+
+        # This slot starts 30 min after (respects 15 min buffer)
+        target_slot = create(:slot, mentor: mentor, organization: organization,
+                             start_time: booked_slot.end_time + 30.minutes,
+                             end_time: booked_slot.end_time + 90.minutes,
+                             status: :available, buffer_minutes: 15)
+
+        result = described_class.call(
+          slot_id: target_slot.id,
+          member: member,
+          idempotency_key: SecureRandom.uuid
+        )
+
+        expect(result[:success]).to be true
+        expect(result[:booking]).to be_persisted
+      end
+    end
   end
 end

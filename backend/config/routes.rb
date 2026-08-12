@@ -31,6 +31,15 @@ Rails.application.routes.draw do
         end
       end
 
+      resources :notifications, only: [ :index ] do
+        member do
+          patch :mark_read
+        end
+        collection do
+          post :mark_all_read
+        end
+      end
+
       namespace :me do
         get "sessions", to: "sessions#index"
         get "mentor_sessions", to: "sessions#mentor_sessions"

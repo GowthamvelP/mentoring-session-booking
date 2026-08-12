@@ -36,6 +36,10 @@ echo "--- Booking Flow (10 VUs, 20s) ---"
 k6 run dev/booking-flow.js || FAILURES=$((FAILURES + 1))
 echo ""
 
+echo "--- Reschedule Concurrency (5 VUs) ---"
+k6 run dev/reschedule-concurrency.js || FAILURES=$((FAILURES + 1))
+echo ""
+
 echo "==================================================="
 if [ $FAILURES -eq 0 ]; then
   echo "🏁 Development load tests complete — all passed"

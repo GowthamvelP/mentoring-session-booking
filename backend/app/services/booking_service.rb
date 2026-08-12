@@ -3,6 +3,7 @@
 # BookingService handles the creation of a new booking with:
 # - Idempotency: duplicate requests with same key return existing booking
 # - Pessimistic locking: SELECT FOR UPDATE prevents double-booking
+# - Buffer validation: ensures mentor has required buffer between sessions
 # - Atomic transaction: slot update + booking creation committed together
 # - Post-commit: cache invalidation + async job enqueue
 #
@@ -48,13 +49,15 @@ class BookingService
 
     ActiveRecord::Base.transaction do
       # SELECT FOR UPDATE — locks the row until transaction commits
-      # Single-row point lock: cannot deadlock, sub-50ms hold time
       slot = Slot.lock("FOR UPDATE").find(@slot_id)
 
       # Validate slot is available
       unless slot.available?
         raise SlotUnavailableError, "Slot is no longer available (current status: #{slot.status})"
       end
+
+      # Validate buffer between mentor's sessions
+      validate_buffer(slot)
 
       # Transition slot to booked
       slot.update!(status: :booked)
@@ -83,6 +86,9 @@ class BookingService
   rescue SlotUnavailableError => e
     Rails.logger.warn("BookingService: slot conflict for slot=#{@slot_id}, member=#{@member.id} — #{e.message}")
     { success: false, error: e.message, status: :conflict }
+  rescue BufferViolationError => e
+    Rails.logger.warn("BookingService: buffer violation for slot=#{@slot_id} — #{e.message}")
+    { success: false, error: e.message, status: :conflict }
   rescue ActiveRecord::RecordNotFound
     Rails.logger.warn("BookingService: slot not found, slot_id=#{@slot_id}")
     { success: false, error: "Slot not found", status: :not_found }
@@ -99,6 +105,25 @@ class BookingService
 
   private
 
+  # Validates that the slot respects the mentor's buffer between sessions.
+  # Checks for any adjacent booked slot within buffer_minutes of this slot.
+  def validate_buffer(slot)
+    buffer = (slot.buffer_minutes || 15).minutes
+    mentor_id = slot.mentor_id
+
+    adjacent_booked = Slot.where(mentor_id: mentor_id, status: :booked)
+                          .where.not(id: slot.id)
+                          .where(
+                            "start_time < ? AND end_time > ?",
+                            slot.end_time + buffer,
+                            slot.start_time - buffer
+                          )
+
+    if adjacent_booked.exists?
+      raise BufferViolationError, "Buffer of #{slot.buffer_minutes || 15} minutes required between mentor sessions"
+    end
+  end
+
   def enqueue_confirmation_job(booking)
     BookingConfirmationJob.perform_later(booking.id)
   end
@@ -107,6 +132,6 @@ class BookingService
     BookingBriefJob.perform_later(booking.id)
   end
 
-  # Custom error for slot unavailability (keeps exception hierarchy clean)
   class SlotUnavailableError < StandardError; end
+  class BufferViolationError < StandardError; end
 end

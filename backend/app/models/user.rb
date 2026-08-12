@@ -6,6 +6,7 @@ class User < ApplicationRecord
   has_one :mentor_profile, dependent: :destroy
   has_many :slots, foreign_key: :mentor_id, dependent: :destroy, inverse_of: :mentor
   has_many :bookings, foreign_key: :member_id, dependent: :destroy, inverse_of: :member
+  has_many :notifications, dependent: :destroy
 
   has_secure_password validations: false # Stub auth — no password required
 

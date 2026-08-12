@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_08_12_120001) do
+ActiveRecord::Schema[8.1].define(version: 2026_08_12_120002) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
   enable_extension "pg_trgm"
@@ -44,6 +44,22 @@ ActiveRecord::Schema[8.1].define(version: 2026_08_12_120001) do
     t.uuid "user_id", null: false
     t.index ["expertise"], name: "index_mentor_profiles_on_expertise_gin", using: :gin
     t.index ["user_id"], name: "index_mentor_profiles_on_user_id", unique: true
+  end
+
+  create_table "notifications", id: :uuid, default: -> { "gen_random_uuid()" }, force: :cascade do |t|
+    t.text "body", null: false
+    t.uuid "booking_id"
+    t.datetime "created_at", null: false
+    t.string "notification_type", null: false
+    t.uuid "organization_id", null: false
+    t.boolean "read", default: false, null: false
+    t.string "title", null: false
+    t.datetime "updated_at", null: false
+    t.uuid "user_id", null: false
+    t.index ["booking_id"], name: "index_notifications_on_booking_id"
+    t.index ["organization_id"], name: "index_notifications_on_organization_id"
+    t.index ["user_id", "read", "created_at"], name: "index_notifications_on_user_read_created"
+    t.index ["user_id"], name: "index_notifications_on_user_id"
   end
 
   create_table "organizations", id: :uuid, default: -> { "gen_random_uuid()" }, force: :cascade do |t|
@@ -102,6 +118,9 @@ ActiveRecord::Schema[8.1].define(version: 2026_08_12_120001) do
   add_foreign_key "bookings", "slots"
   add_foreign_key "bookings", "users", column: "member_id"
   add_foreign_key "mentor_profiles", "users"
+  add_foreign_key "notifications", "bookings"
+  add_foreign_key "notifications", "organizations"
+  add_foreign_key "notifications", "users"
   add_foreign_key "pre_session_briefs", "bookings"
   add_foreign_key "slots", "organizations"
   add_foreign_key "slots", "users", column: "mentor_id"

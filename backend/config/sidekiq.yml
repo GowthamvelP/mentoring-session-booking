@@ -9,6 +9,7 @@
   - [critical, 6]      # Booking confirmations, cancellations (user-facing)
   - [default, 3]       # Standard background processing
   - [notifications, 2] # Email/push notifications (can tolerate delay)
+  - [ai, 1]            # AI-powered features (briefs, embeddings)
   - [low, 1]           # Analytics, cleanup, non-urgent tasks
 
 # Retry configuration

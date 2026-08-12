@@ -13,23 +13,35 @@ RSpec.describe NotificationService, type: :service do
   after { ActsAsTenant.current_tenant = nil }
 
   describe ".booking_confirmed" do
-    it "logs notification with correct event type and recipients" do
+    it "creates notifications for member and mentor" do
+      expect {
+        described_class.booking_confirmed(booking)
+      }.to change(Notification, :count).by(2)
+    end
+
+    it "logs notification_created events" do
       expect(Rails.logger).to receive(:info).with(hash_including(
-        event: "notification_sent",
-        notification_type: :booking_confirmed,
+        event: "notification_created",
+        notification_type: "booking_confirmed",
         booking_id: booking.id
-      ))
+      )).twice
       described_class.booking_confirmed(booking)
     end
   end
 
   describe ".booking_cancelled" do
-    it "logs notification with correct event type" do
+    it "creates notifications for member and mentor" do
+      expect {
+        described_class.booking_cancelled(booking)
+      }.to change(Notification, :count).by(2)
+    end
+
+    it "logs notification_created events" do
       expect(Rails.logger).to receive(:info).with(hash_including(
-        event: "notification_sent",
-        notification_type: :booking_cancelled,
+        event: "notification_created",
+        notification_type: "booking_cancelled",
         booking_id: booking.id
-      ))
+      )).twice
       described_class.booking_cancelled(booking)
     end
   end
@@ -42,12 +54,18 @@ RSpec.describe NotificationService, type: :service do
     end
     let(:new_booking) { create(:booking, slot: new_slot, member: member, organization: organization) }
 
-    it "logs notification with correct event type and booking reference" do
+    it "creates notifications for member and mentor" do
+      expect {
+        described_class.booking_rescheduled(booking, new_booking)
+      }.to change(Notification, :count).by(2)
+    end
+
+    it "logs notification_created events" do
       expect(Rails.logger).to receive(:info).with(hash_including(
-        event: "notification_sent",
-        notification_type: :booking_rescheduled,
+        event: "notification_created",
+        notification_type: "booking_rescheduled",
         booking_id: new_booking.id
-      ))
+      )).twice
       described_class.booking_rescheduled(booking, new_booking)
     end
   end
