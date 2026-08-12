@@ -30,7 +30,7 @@ module Api
       # PATCH /api/v1/bookings/:id/cancel
       def cancel
         booking = Booking.find(params[:id])
-        result = CancellationService.call(booking: booking, user: current_user)
+        result = CancellationService.call(booking: booking, user: current_user, reason: params[:reason])
 
         if result[:success]
           render json: { data: BookingBlueprint.render_as_hash(result[:booking]) }

@@ -15,13 +15,14 @@ class CancellationService
 
   CANCELLATION_WINDOW = 1.hour
 
-  def self.call(booking:, user:)
-    new(booking: booking, user: user).call
+  def self.call(booking:, user:, reason: nil)
+    new(booking: booking, user: user, reason: reason).call
   end
 
-  def initialize(booking:, user:)
+  def initialize(booking:, user:, reason: nil)
     @booking = booking
     @user = user
+    @reason = reason
   end
 
   def call
@@ -51,7 +52,7 @@ class CancellationService
 
     # 4. Atomic cancellation (booking + slot in single transaction)
     ActiveRecord::Base.transaction do
-      @booking.update!(status: :cancelled, cancelled_at: Time.current)
+      @booking.update!(status: :cancelled, cancelled_at: Time.current, cancellation_reason: @reason)
       @booking.slot.update!(status: :available)
     end
 

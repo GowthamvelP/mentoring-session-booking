@@ -279,12 +279,13 @@ This project was built using Kiro (agentic IDE) with structured spec-driven deve
 
 ### Features (P2)
 - Real authentication (OAuth2 + JWT tokens via Devise + Doorkeeper)
-- Per-user timezone preferences with automatic slot display conversion
+- Google/Apple/Outlook calendar sync (OAuth integration for conflict detection)
+- Mentor settings page (notification preferences, buffer config, session duration)
+- Email notifications via ActionMailer + SendGrid
+- Admin dashboard for org-level analytics
 - Configurable cancellation policy engine (per-org rules, tiered penalties)
-- Per-member booking limits (org-configurable `max_active_bookings`)
 - Recurring slot generation (mentors manage their own availability)
 - Real-time notifications via ActionCable/WebSocket
-- Email notifications via ActionMailer + SendGrid
 - Mentor search powered by Elasticsearch (full-text + expertise faceted search)
 - Variable session durations (30/60/90min) configurable per mentor
 - Session type templates (career coaching, technical review, pair programming)

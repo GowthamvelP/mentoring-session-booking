@@ -93,3 +93,17 @@ export function getBrowserTimezone(): string {
     return 'UTC'
   }
 }
+
+/**
+ * Format a UTC ISO timestamp as a date string (e.g., "Thursday, Aug 13, 2026").
+ */
+export function formatSlotDate(utcIsoString: string, timezone: string): string {
+  const date = new Date(utcIsoString)
+  return new Intl.DateTimeFormat('en-US', {
+    timeZone: timezone,
+    weekday: 'long',
+    month: 'short',
+    day: 'numeric',
+    year: 'numeric',
+  }).format(date)
+}

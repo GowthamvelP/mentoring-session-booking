@@ -1,5 +1,5 @@
 import { useState, useCallback } from 'react'
-import { useParams, useNavigate, useSearchParams } from 'react-router-dom'
+import { useParams, useNavigate, useSearchParams, useLocation } from 'react-router-dom'
 import { addWeeks, startOfWeek, endOfWeek, format, isBefore, startOfToday } from 'date-fns'
 import { useSlots } from '../hooks/useSlots'
 import { useCreateBooking, useRescheduleBooking } from '../hooks/useBooking'
@@ -14,14 +14,20 @@ import { ErrorState } from '../components/ui/ErrorState'
 import { Button } from '../components/ui/Button'
 import { PageTransition } from '../components/ui/PageTransition'
 import { TimezoneSelector } from '../components/ui/TimezoneSelector'
+import { ConfirmBookingModal } from '../components/ui/ConfirmBookingModal'
+import { BookingConfirmationModal } from '../components/ui/BookingConfirmationModal'
 import type { Slot } from '../api/types'
 
 export function MentorSlotsPage() {
   const { id: mentorId } = useParams<{ id: string }>()
   const [searchParams] = useSearchParams()
   const navigate = useNavigate()
+  const location = useLocation()
   const { showToast } = useToast()
   const { timezone, setTimezone } = useAuth()
+
+  // Get mentor name from navigation state (passed from MentorsPage)
+  const mentorName: string = (location.state as { mentorName?: string })?.mentorName || 'Mentor'
 
   // Detect reschedule mode from URL query param
   const rescheduleBookingId = searchParams.get('reschedule')
@@ -29,6 +35,15 @@ export function MentorSlotsPage() {
 
   const [weekOffset, setWeekOffset] = useState(0)
   const [bookingSlotId, setBookingSlotId] = useState<string | null>(null)
+
+  // Pre-booking confirmation modal state
+  const [selectedSlot, setSelectedSlot] = useState<Slot | null>(null)
+  // Post-booking success modal state
+  const [confirmedBooking, setConfirmedBooking] = useState<{
+    mentorName: string
+    startTime: string
+    endTime: string
+  } | null>(null)
 
   const baseDate = addWeeks(startOfToday(), weekOffset)
   const weekStart = startOfWeek(baseDate, { weekStartsOn: 1 })
@@ -42,12 +57,11 @@ export function MentorSlotsPage() {
   const bookMutation = useCreateBooking(mentorId, timezone)
   const rescheduleMutation = useRescheduleBooking(timezone)
 
-  const handleBookSlot = useCallback(
+  const handleSlotClick = useCallback(
     (slot: Slot) => {
-      setBookingSlotId(slot.id)
-
       if (isRescheduleMode && rescheduleBookingId) {
-        // RESCHEDULE MODE: Call reschedule endpoint
+        // RESCHEDULE MODE: proceed directly (no pre-confirm modal needed)
+        setBookingSlotId(slot.id)
         rescheduleMutation.mutate(
           { bookingId: rescheduleBookingId, newSlotId: slot.id },
           {
@@ -64,23 +78,40 @@ export function MentorSlotsPage() {
           }
         )
       } else {
-        // NORMAL MODE: Create new booking
-        bookMutation.mutate(slot.id, {
-          onSuccess: () => {
-            showToast('Session booked successfully!', 'success')
-            setBookingSlotId(null)
-            setTimeout(() => navigate('/sessions'), 2000)
-          },
-          onError: (error) => {
-            const message = (error as { error?: string })?.error || 'Booking failed'
-            showToast(message, 'error')
-            setBookingSlotId(null)
-          },
-        })
+        // NORMAL MODE: Show pre-booking confirmation modal
+        setSelectedSlot(slot)
       }
     },
-    [bookMutation, rescheduleMutation, showToast, navigate, isRescheduleMode, rescheduleBookingId]
+    [rescheduleMutation, showToast, navigate, isRescheduleMode, rescheduleBookingId]
   )
+
+  const handleConfirmBooking = useCallback(() => {
+    if (!selectedSlot) return
+
+    setBookingSlotId(selectedSlot.id)
+    bookMutation.mutate(selectedSlot.id, {
+      onSuccess: () => {
+        setBookingSlotId(null)
+        setSelectedSlot(null)
+        // Show success confirmation modal with calendar options
+        setConfirmedBooking({
+          mentorName,
+          startTime: selectedSlot.start_time,
+          endTime: selectedSlot.end_time,
+        })
+      },
+      onError: (error) => {
+        const message = (error as { error?: string })?.error || 'Booking failed'
+        showToast(message, 'error')
+        setBookingSlotId(null)
+        setSelectedSlot(null)
+      },
+    })
+  }, [selectedSlot, bookMutation, showToast, mentorName])
+
+  const handleCancelConfirm = useCallback(() => {
+    setSelectedSlot(null)
+  }, [])
 
   const canGoBack = !isBefore(addWeeks(startOfToday(), weekOffset - 1), startOfToday())
 
@@ -109,11 +140,11 @@ export function MentorSlotsPage() {
 
       {isRescheduleMode && (
         <div className="mb-4 rounded-lg border border-warning/30 bg-warning/5 px-4 py-3 text-sm text-warning">
-          ⚠️ You are rescheduling an existing session. Selecting a new slot will cancel your current booking and create a new one.
+          You are rescheduling an existing session. Selecting a new slot will cancel your current booking and create a new one.
         </div>
       )}
 
-      <div className="flex items-center justify-between gap-4">
+      <div className="flex flex-wrap items-center justify-between gap-4">
         <WeekNavigation
           currentDate={weekStart}
           onPrevious={() => setWeekOffset((w) => w - 1)}
@@ -139,13 +170,36 @@ export function MentorSlotsPage() {
           <PageTransition>
             <SlotGrid
               slots={slots}
-              onSlotClick={handleBookSlot}
+              onSlotClick={handleSlotClick}
               bookingSlotId={bookingSlotId}
               timezone={timezone}
             />
           </PageTransition>
         )}
       </div>
+
+      {/* Pre-booking confirmation modal */}
+      <ConfirmBookingModal
+        isOpen={!!selectedSlot}
+        mentorName={mentorName}
+        slotStartTime={selectedSlot?.start_time || ''}
+        slotEndTime={selectedSlot?.end_time || ''}
+        timezone={timezone}
+        isLoading={bookMutation.isPending}
+        onConfirm={handleConfirmBooking}
+        onCancel={handleCancelConfirm}
+      />
+
+      {/* Post-booking success modal with calendar options */}
+      <BookingConfirmationModal
+        isOpen={!!confirmedBooking}
+        mentorName={confirmedBooking?.mentorName || ''}
+        slotStartTime={confirmedBooking?.startTime || ''}
+        slotEndTime={confirmedBooking?.endTime || ''}
+        timezone={timezone}
+        onViewSessions={() => navigate('/sessions')}
+        onClose={() => setConfirmedBooking(null)}
+      />
     </AppShell>
   )
 }

@@ -37,7 +37,7 @@ export function MentorsPage() {
   const { data, isLoading, isFetching, isError, refetch } = useMentors(page, debouncedSearch)
 
   const handleMentorClick = (mentor: Mentor) => {
-    navigate(`/mentors/${mentor.id}/slots`)
+    navigate(`/mentors/${mentor.id}/slots`, { state: { mentorName: mentor.name } })
   }
 
   const isSearching = searchInput !== debouncedSearch || (isFetching && !!debouncedSearch)

@@ -1,4 +1,4 @@
-import { useMemo } from 'react'
+import { useState, useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { isFuture, parseISO } from 'date-fns'
 import { useMySessions } from '../hooks/useSessions'
@@ -11,10 +11,12 @@ import { CardSkeleton } from '../components/ui/Skeleton'
 import { EmptyState } from '../components/ui/EmptyState'
 import { ErrorState } from '../components/ui/ErrorState'
 import { PageTransition } from '../components/ui/PageTransition'
+import { Button } from '../components/ui/Button'
 
 export function MySessionsPage() {
   const navigate = useNavigate()
-  const { data, isLoading, isError, refetch } = useMySessions()
+  const [page, setPage] = useState(1)
+  const { data, isLoading, isError, refetch } = useMySessions(page)
   const cancelMutation = useCancelBooking()
   const { showToast } = useToast()
 
@@ -103,6 +105,31 @@ export function MySessionsPage() {
               </section>
             )}
           </div>
+
+          {/* Pagination controls */}
+          {data.meta.total_pages > 1 && (
+            <div className="mt-8 flex items-center justify-center gap-3">
+              <Button
+                variant="secondary"
+                size="sm"
+                onClick={() => setPage((p) => Math.max(1, p - 1))}
+                disabled={page === 1}
+              >
+                Previous
+              </Button>
+              <span className="text-sm text-text-muted">
+                Page {data.meta.current_page} of {data.meta.total_pages}
+              </span>
+              <Button
+                variant="secondary"
+                size="sm"
+                onClick={() => setPage((p) => p + 1)}
+                disabled={page >= data.meta.total_pages}
+              >
+                Next
+              </Button>
+            </div>
+          )}
         </PageTransition>
       )}
     </AppShell>

@@ -8,7 +8,7 @@ module Api
         def index
           bookings = current_user.bookings
                                  .includes(slot: { mentor: :mentor_profile })
-                                 .order("slots.start_time DESC")
+                                 .order("slots.start_time ASC")
 
           pagy, records = pagy(bookings, limit: 20)
 
@@ -40,7 +40,7 @@ module Api
           bookings = Booking.joins(:slot)
                            .where(slots: { mentor_id: current_user.id })
                            .includes(:member, slot: :mentor)
-                           .order("slots.start_time DESC")
+                           .order("slots.start_time ASC")
 
           pagy, records = pagy(bookings, limit: 20)
 

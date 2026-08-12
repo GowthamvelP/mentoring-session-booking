@@ -10,7 +10,7 @@ module Api
         if params[:search].present?
           search_term = "%#{params[:search].downcase}%"
           mentors = mentors.joins(:mentor_profile).where(
-            "LOWER(users.name) LIKE :term OR EXISTS (SELECT 1 FROM unnest(mentor_profiles.expertise) AS exp WHERE LOWER(exp) LIKE :term)",
+            "LOWER(users.name) LIKE :term OR LOWER(array_to_string(mentor_profiles.expertise, ' ')) LIKE :term",
             term: search_term
           )
         end
