@@ -84,7 +84,7 @@ The seed script creates sample data (2 orgs, 4 mentors, 4 members, 40+ slots) �
 - **My Sessions** — separate member/mentor views with status filtering
 
 ### Notifications & UX
-- **In-app notification system** — bell icon with unread count badge, mark read/mark all read
+- **In-app notification system** — bell icon with unread count badge, real-time (synchronous creation, zero-latency on action), mark read/mark all read, 30s background poll
 - **Pre-booking confirmation modal** — shows session details before committing
 - **Post-booking confirmation modal** — success state with next steps
 - **Cancel confirmation modal** — with optional reason input
@@ -309,7 +309,7 @@ mentoring-session-booking/
 - Admin dashboard for org-level analytics
 - Configurable cancellation policy engine (per-org rules, tiered penalties)
 - Recurring slot generation (mentors manage own availability)
-- Real-time notifications via ActionCable/WebSocket
+- Real-time push notifications via ActionCable/WebSocket (currently using synchronous creation + polling — evaluated WebSocket and chose polling for MVP simplicity)
 - Variable session durations (30/60/90min) per mentor
 - Session type templates (career coaching, technical review, pair programming)
 
