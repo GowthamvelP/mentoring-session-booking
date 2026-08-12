@@ -1,0 +1,13 @@
+{
+  "mcpServers": {
+    "mentorbook": {
+      "command": "node",
+      "args": ["mcp-server/server.js"],
+      "env": {
+        "MCP_API_URL": "http://localhost:3000/api/v1/ai/mcp",
+        "MCP_USER_ID": "394274ca-5151-45bb-9d3d-6ccb1ba01106",
+        "MCP_ORG_ID": "676d0426-b24e-4f4e-a752-50ea770e3b03"
+      }
+    }
+  }
+}
