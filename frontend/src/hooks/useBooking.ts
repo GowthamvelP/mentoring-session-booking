@@ -40,6 +40,7 @@ export function useCreateBooking(mentorId?: string, timezone?: string) {
         queryClient.invalidateQueries({ queryKey: QUERY_KEYS.slots(mentorId) })
       }
       queryClient.invalidateQueries({ queryKey: QUERY_KEYS.sessions })
+      queryClient.invalidateQueries({ queryKey: QUERY_KEYS.notifications })
     },
   })
 }
@@ -54,6 +55,7 @@ export function useCancelBooking() {
       queryClient.invalidateQueries({ queryKey: QUERY_KEYS.sessions })
       // Also invalidate ALL slots queries — the cancelled slot is now available again
       queryClient.invalidateQueries({ queryKey: ["slots"] })
+      queryClient.invalidateQueries({ queryKey: QUERY_KEYS.notifications })
     },
   })
 }
@@ -70,6 +72,7 @@ export function useRescheduleBooking(timezone?: string) {
       // Invalidate ALL slot queries — both the old slot (now available)
       // and new slot (now booked) may belong to any mentor
       queryClient.invalidateQueries({ queryKey: ["slots"] })
+      queryClient.invalidateQueries({ queryKey: QUERY_KEYS.notifications })
     },
   })
 }

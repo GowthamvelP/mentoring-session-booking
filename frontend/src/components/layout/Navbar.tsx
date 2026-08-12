@@ -1,5 +1,6 @@
-import { Link, useLocation } from 'react-router-dom'
-import { useAuth } from '../../hooks/useAuth'
+import { Link, useLocation } from "react-router-dom"
+import { useAuth } from "../../hooks/useAuth"
+import { NotificationBell } from "./NotificationBell"
 
 export function Navbar() {
   const { organization, userName, clearAuth, isAuthenticated } = useAuth()
@@ -10,8 +11,8 @@ export function Navbar() {
   const linkClass = (path: string) =>
     `text-sm font-medium transition-colors ${
       isActive(path)
-        ? 'text-primary-light'
-        : 'text-text-muted hover:text-text'
+        ? "text-primary-light"
+        : "text-text-muted hover:text-text"
     }`
 
   return (
@@ -27,18 +28,19 @@ export function Navbar() {
         {isAuthenticated && (
           <div className="flex items-center gap-8">
             <div className="flex items-center gap-6">
-              <Link to="/mentors" className={linkClass('/mentors')}>
+              <Link to="/mentors" className={linkClass("/mentors")}>
                 Mentors
               </Link>
-              <Link to="/sessions" className={linkClass('/sessions')}>
+              <Link to="/sessions" className={linkClass("/sessions")}>
                 My Sessions
               </Link>
             </div>
 
             <div className="flex items-center gap-3 border-l border-surface-border pl-6">
+              <NotificationBell />
               <div className="text-right">
                 <p className="text-xs text-text-dim">{organization?.name}</p>
-                <p className="text-sm text-text-muted">{userName || 'User'}</p>
+                <p className="text-sm text-text-muted">{userName || "User"}</p>
               </div>
               <button
                 onClick={clearAuth}
