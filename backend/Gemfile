@@ -19,6 +19,16 @@ gem "tzinfo-data", platforms: %i[ windows jruby ]
 # Reduces boot times through caching; required in config/boot.rb
 gem "bootsnap", require: false
 
+# Deploy this application anywhere as a Docker container [https://kamal-deploy.org]
+# Not used in development (using docker-compose instead) — available for production Kamal deployment
+gem "kamal", require: false
+
+# HTTP asset caching/compression and X-Sendfile acceleration for Puma [https://github.com/basecamp/thruster/]
+# Not active in development — in production, acts as reverse proxy in front of Puma
+# (handles SSL termination, asset caching, X-Sendfile without nginx)
+gem "thruster", require: false
+
+
 
 
 
