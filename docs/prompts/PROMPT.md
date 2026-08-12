@@ -18,7 +18,7 @@ I'm a Technical Lead / Backend & Platform Architect with 9+ years of experience.
 Currently at Nextpoint, building document processing pipelines at scale 
 (30M+ docs/month).
 
-I built GetGist (cal.id/gowthamvel-palanivel), a Calendly-like scheduling 
+I built GetGist (getgist.me/gowthamvelpalanivel), a Calendly-like scheduling 
 platform where users set availability and end-users book slots with 
 calendar conflict detection. I know this domain deeply:
 - Availability rules (weekdays, weekends, overrides)
@@ -622,7 +622,7 @@ docker-compose exec frontend npm test
 ```
 
 UI REFERENCE (GetGist Screenshots)
-I have screenshots of my GetGist app (cal.id/gowthamvel-palanivel) showing:
+I have screenshots of my GetGist app (getgist.me/gowthamvelpalanivel) showing:
 Service card landing page (avatar, title, description, duration pills, schedule button)
 Calendar slot selection (month/week/column views, time slot buttons)
 Booking form (name, email, notes, guests, add guests)
