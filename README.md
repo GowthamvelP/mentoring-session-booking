@@ -8,6 +8,13 @@ A full-stack mentoring session booking application enabling members to browse me
 
 ---
 
+## Prior Experience & Scope Discipline
+
+I previously built [GetGist](https://cal.id/gowthamvel-palanivel), a Calendly-class scheduling platform with calendar integration, conflict detection, and availability rules. I know this domain deeply — which is exactly why I scoped aggressively for this 48-hour exercise. OAuth calendar sync, recurring slot generation, configurable cancellation policies, and variable session durations were explicitly cut so I could go deep on concurrency safety, idempotency, multi-tenancy, AI-native architecture, and production observability. Depth and judgment over breadth.
+
+
+---
+
 ## Quick Start
 
 ```bash
