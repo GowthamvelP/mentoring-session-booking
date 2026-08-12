@@ -78,7 +78,42 @@ module Api
                   status: { type: "string", enum: %w[confirmed cancelled all], description: "Filter by status" }
                 }
               }
-            }
+            },
+{
+  name: "get_mentor_profile",
+  description: "Get detailed profile for a specific mentor including bio, expertise, and availability settings",
+  input_schema: {
+    type: "object",
+    properties: {
+      mentor_id: { type: "string", description: "UUID of the mentor" }
+    },
+    required: [ "mentor_id" ]
+  }
+},
+{
+  name: "get_booking_details",
+  description: "Get full details of a specific booking including slot time, mentor, and status",
+  input_schema: {
+    type: "object",
+    properties: {
+      booking_id: { type: "string", description: "UUID of the booking" }
+    },
+    required: [ "booking_id" ]
+  }
+},
+{
+  name: "reschedule_booking",
+  description: "Reschedule an existing booking to a new available slot (atomic swap)",
+  input_schema: {
+    type: "object",
+    properties: {
+      booking_id: { type: "string", description: "UUID of the booking to reschedule" },
+      new_slot_id: { type: "string", description: "UUID of the new slot to move to" },
+      timezone: { type: "string", description: "IANA timezone for the rescheduled booking" }
+    },
+    required: [ "booking_id", "new_slot_id" ]
+  }
+}
           ]
         end
 
@@ -89,6 +124,9 @@ module Api
           when "book_slot" then tool_book_slot(args)
           when "cancel_booking" then tool_cancel_booking(args)
           when "my_sessions" then tool_my_sessions(args)
+          when "get_mentor_profile" then tool_get_mentor_profile(args)
+          when "get_booking_details" then tool_get_booking_details(args)
+          when "reschedule_booking" then tool_reschedule_booking(args)
           else
             { error: "Unknown tool: #{name}", available_tools: tool_definitions.map { |t| t[:name] } }
           end
