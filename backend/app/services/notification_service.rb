@@ -23,24 +23,27 @@ class NotificationService
     def booking_confirmed(booking)
       mentor = booking.slot.mentor
       member = booking.member
-      time_str = format_time(booking.slot.start_time, booking.booked_timezone || booking.organization.timezone)
 
-      # Notify member
+      # Each recipient sees times in THEIR timezone (Google Calendar pattern)
+      member_time = format_time(booking.slot.start_time, recipient_timezone(member, booking))
+      mentor_time = format_time(booking.slot.start_time, recipient_timezone(mentor, booking))
+
+      # Notify member (in member's timezone)
       create_notification(
         user: member,
         booking: booking,
         type: "booking_confirmed",
         title: "Session Confirmed",
-        body: "Your session with #{mentor.name} on #{time_str} is confirmed."
+        body: "Your session with #{mentor.name} on #{member_time} is confirmed."
       )
 
-      # Notify mentor
+      # Notify mentor (in mentor's timezone)
       create_notification(
         user: mentor,
         booking: booking,
         type: "booking_confirmed",
         title: "New Session Booked",
-        body: "#{member.name} booked a session with you on #{time_str}."
+        body: "#{member.name} booked a session with you on #{mentor_time}."
       )
     end
 
