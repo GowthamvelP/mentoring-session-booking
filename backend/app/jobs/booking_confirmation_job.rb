@@ -1,6 +1,9 @@
 # frozen_string_literal: true
 
-# Processes booking confirmation notifications off the request path.
+# Processes booking confirmation delivery off the request path.
+# In-app notifications are now created synchronously in BookingService.
+# This job handles future email/push delivery (ActionMailer integration).
+#
 # Queue: critical (user-facing, time-sensitive)
 # Retry: 5 attempts with exponential backoff
 class BookingConfirmationJob < ApplicationJob
@@ -9,6 +12,14 @@ class BookingConfirmationJob < ApplicationJob
 
   def perform(booking_id)
     booking = Booking.includes(slot: :mentor, member: []).find(booking_id)
-    NotificationService.booking_confirmed(booking)
+
+    # Future: ActionMailer email delivery
+    # BookingMailer.confirmation(booking).deliver_now
+
+    Rails.logger.info(
+      event: "booking_confirmation_delivered",
+      booking_id: booking.id,
+      channel: "in_app"
+    )
   end
 end

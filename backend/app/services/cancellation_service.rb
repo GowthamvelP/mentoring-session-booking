@@ -4,7 +4,7 @@
 # - Ownership verification: only the booking member can cancel
 # - 1-hour cancellation window: can't cancel within 1 hour of slot start
 # - Atomic transaction: booking cancelled + slot released together
-# - Post-commit: cache invalidation + async job enqueue
+# - Post-commit: cache invalidation + synchronous notification
 #
 # Usage:
 #   result = CancellationService.call(booking: booking, user: current_user)
@@ -58,7 +58,9 @@ class CancellationService
 
     # 5. Post-commit operations
     invalidate_slot_cache(@booking.slot.mentor_id)
-    enqueue_cancellation_job(@booking)
+
+    # Synchronous: create in-app notifications (instant for frontend)
+    NotificationService.booking_cancelled(@booking)
 
     Rails.logger.debug { "CancellationService: booking=#{@booking.id} cancelled successfully" }
 
@@ -67,11 +69,5 @@ class CancellationService
   rescue ActiveRecord::RecordInvalid => e
     Rails.logger.error("CancellationService: unexpected error during cancellation of booking=#{@booking.id}: #{e.message}")
     { success: false, error: "Cancellation failed: #{e.message}", status: :unprocessable_entity }
-  end
-
-  private
-
-  def enqueue_cancellation_job(booking)
-    BookingCancellationJob.perform_later(booking.id)
   end
 end

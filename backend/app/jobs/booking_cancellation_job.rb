@@ -1,6 +1,9 @@
 # frozen_string_literal: true
 
-# Processes booking cancellation notifications off the request path.
+# Processes booking cancellation delivery off the request path.
+# In-app notifications are now created synchronously in CancellationService.
+# This job handles future email/push delivery (ActionMailer integration).
+#
 # Queue: critical (user-facing, time-sensitive)
 # Retry: 5 attempts with exponential backoff
 class BookingCancellationJob < ApplicationJob
@@ -9,6 +12,14 @@ class BookingCancellationJob < ApplicationJob
 
   def perform(booking_id)
     booking = Booking.includes(slot: :mentor, member: []).find(booking_id)
-    NotificationService.booking_cancelled(booking)
+
+    # Future: ActionMailer email delivery
+    # BookingMailer.cancellation(booking).deliver_now
+
+    Rails.logger.info(
+      event: "booking_cancellation_delivered",
+      booking_id: booking.id,
+      channel: "in_app"
+    )
   end
 end

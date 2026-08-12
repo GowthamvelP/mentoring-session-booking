@@ -25,10 +25,10 @@ RSpec.describe BookingService, type: :service do
         expect(slot.reload.status).to eq("booked")
       end
 
-      it "enqueues BookingConfirmationJob" do
+      it "creates notifications for member and mentor" do
         expect {
           described_class.call(slot_id: slot.id, member: member, idempotency_key: SecureRandom.uuid)
-        }.to have_enqueued_job(BookingConfirmationJob)
+        }.to change(Notification, :count).by(2)
       end
     end
 

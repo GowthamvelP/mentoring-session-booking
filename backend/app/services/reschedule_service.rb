@@ -5,6 +5,7 @@
 # - Pessimistic locking on new slot (SELECT FOR UPDATE)
 # - Full atomicity: if new slot booking fails, original is preserved
 # - Cache invalidation for both original and new mentor's slots
+# - Synchronous in-app notification creation
 #
 # Usage:
 #   result = RescheduleService.call(booking: booking, new_slot_id: "uuid", user: current_user)
@@ -80,7 +81,8 @@ class RescheduleService
     invalidate_slot_cache(original_mentor_id)
     invalidate_slot_cache(new_mentor_id) if new_mentor_id != original_mentor_id
 
-    enqueue_reschedule_job(@booking, new_booking)
+    # Synchronous: create in-app notifications (instant for frontend)
+    NotificationService.booking_rescheduled(@booking, new_booking)
 
     Rails.logger.debug { "RescheduleService: reschedule successful — old_booking=#{@booking.id}, new_booking=#{new_booking.id}" }
 
@@ -98,10 +100,6 @@ class RescheduleService
   end
 
   private
-
-  def enqueue_reschedule_job(old_booking, new_booking)
-    BookingRescheduleJob.perform_later(old_booking.id, new_booking.id)
-  end
 
   # Custom error for slot unavailability
   class SlotUnavailableError < StandardError; end

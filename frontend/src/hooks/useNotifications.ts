@@ -1,6 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query"
 import apiClient from "../api/client"
-import { QUERY_KEYS, STALE_TIMES } from "../lib/constants"
+import { QUERY_KEYS } from "../lib/constants"
 
 interface Notification {
   id: string
@@ -34,8 +34,8 @@ export function useNotifications() {
   return useQuery({
     queryKey: QUERY_KEYS.notifications,
     queryFn: getNotifications,
-    staleTime: STALE_TIMES.notifications,
-    refetchInterval: 30_000, // Poll every 30s for new notifications
+    staleTime: 0, // Always refetch when invalidated — notifications must be real-time
+    refetchInterval: 30_000, // Background poll every 30s for external changes
   })
 }
 

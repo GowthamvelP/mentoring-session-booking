@@ -25,10 +25,10 @@ RSpec.describe RescheduleService, type: :service do
         expect(new_slot.reload.status).to eq("booked")
       end
 
-      it "enqueues BookingRescheduleJob" do
+      it "creates notifications for member and mentor" do
         expect {
           described_class.call(booking: booking, new_slot_id: new_slot.id, user: member)
-        }.to have_enqueued_job(BookingRescheduleJob)
+        }.to change(Notification, :count).by(2)
       end
 
       # Property 9: Reschedule preserves booking count

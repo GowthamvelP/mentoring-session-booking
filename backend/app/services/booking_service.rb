@@ -5,7 +5,7 @@
 # - Pessimistic locking: SELECT FOR UPDATE prevents double-booking
 # - Buffer validation: ensures mentor has required buffer between sessions
 # - Atomic transaction: slot update + booking creation committed together
-# - Post-commit: cache invalidation + async job enqueue
+# - Post-commit: cache invalidation + synchronous notification + async jobs
 #
 # Usage:
 #   result = BookingService.call(slot_id: "uuid", member: user, idempotency_key: "uuid")
@@ -76,8 +76,12 @@ class BookingService
 
     # 3. Post-commit operations (outside transaction)
     invalidate_slot_cache(booking.slot.mentor_id)
-    enqueue_confirmation_job(booking)
-    enqueue_brief_job(booking)
+
+    # Synchronous: create in-app notifications (instant for frontend polling)
+    NotificationService.booking_confirmed(booking)
+
+    # Async: AI brief generation (non-blocking, separate queue)
+    BookingBriefJob.perform_later(booking.id)
 
     Rails.logger.debug { "BookingService: booking created successfully, id=#{booking.id}, slot=#{@slot_id}" }
 
@@ -106,7 +110,6 @@ class BookingService
   private
 
   # Validates that the slot respects the mentor's buffer between sessions.
-  # Checks for any adjacent booked slot within buffer_minutes of this slot.
   def validate_buffer(slot)
     buffer = (slot.buffer_minutes || 15).minutes
     mentor_id = slot.mentor_id
@@ -122,14 +125,6 @@ class BookingService
     if adjacent_booked.exists?
       raise BufferViolationError, "Buffer of #{slot.buffer_minutes || 15} minutes required between mentor sessions"
     end
-  end
-
-  def enqueue_confirmation_job(booking)
-    BookingConfirmationJob.perform_later(booking.id)
-  end
-
-  def enqueue_brief_job(booking)
-    BookingBriefJob.perform_later(booking.id)
   end
 
   class SlotUnavailableError < StandardError; end

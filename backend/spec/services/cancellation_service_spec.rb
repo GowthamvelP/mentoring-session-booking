@@ -21,10 +21,10 @@ RSpec.describe CancellationService, type: :service do
         expect(slot.reload.status).to eq("available")
       end
 
-      it "enqueues BookingCancellationJob" do
+      it "creates notifications for member and mentor" do
         expect {
           described_class.call(booking: booking, user: member)
-        }.to have_enqueued_job(BookingCancellationJob)
+        }.to change(Notification, :count).by(2)
       end
 
       # Property 3: Cancellation restores slot availability
