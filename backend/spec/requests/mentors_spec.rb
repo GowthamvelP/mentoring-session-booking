@@ -42,5 +42,34 @@ RSpec.describe "Mentors API", type: :request do
       expect(json["meta"]["total_count"]).to be >= 1
       expect(json["meta"]["per_page"]).to be_present
     end
+
+    context "with search filter" do
+      let!(:mentor2) { create(:user, :mentor, organization: organization, name: "Jane Python Expert") }
+
+      before do
+        mentor.mentor_profile.update!(expertise: ["Ruby on Rails", "System Design"])
+        mentor2.mentor_profile.update!(expertise: ["Python", "Machine Learning"])
+      end
+
+      it "filters mentors by name" do
+        get "/api/v1/mentors", params: { search: mentor.name.split.first.downcase }, headers: headers
+        json = JSON.parse(response.body)
+        expect(json["data"].length).to be >= 1
+        expect(json["data"].map { |m| m["id"] }).to include(mentor.id)
+      end
+
+      it "filters mentors by expertise" do
+        get "/api/v1/mentors", params: { search: "python" }, headers: headers
+        json = JSON.parse(response.body)
+        expect(json["data"].length).to be >= 1
+        expect(json["data"].map { |m| m["id"] }).to include(mentor2.id)
+      end
+
+      it "returns empty array for no matches" do
+        get "/api/v1/mentors", params: { search: "nonexistenttermxyz" }, headers: headers
+        json = JSON.parse(response.body)
+        expect(json["data"]).to eq([])
+      end
+    end
   end
 end

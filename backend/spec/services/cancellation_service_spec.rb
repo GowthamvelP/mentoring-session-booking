@@ -78,5 +78,19 @@ RSpec.describe CancellationService, type: :service do
         expect(result[:status]).to eq(:unprocessable_entity)
       end
     end
+
+    context "unexpected validation error during transaction" do
+      it "returns failure with error message when RecordInvalid is raised" do
+        allow_any_instance_of(Booking).to receive(:update!).and_raise(
+          ActiveRecord::RecordInvalid.new(booking)
+        )
+
+        result = described_class.call(booking: booking, user: member)
+
+        expect(result[:success]).to be false
+        expect(result[:error]).to include("Cancellation failed")
+        expect(result[:status]).to eq(:unprocessable_entity)
+      end
+    end
   end
 end

@@ -45,6 +45,37 @@ RSpec.describe "Sessions API", type: :request do
     end
   end
 
+  describe "PATCH /api/v1/me/timezone" do
+    let(:headers) { { "X-User-Id" => member.id, "X-Org-Id" => organization.id } }
+
+    it "updates user timezone with valid IANA timezone" do
+      patch "/api/v1/me/timezone", params: { timezone: "Asia/Kolkata" }, headers: headers
+
+      expect(response).to have_http_status(:ok)
+      json = JSON.parse(response.body)
+      expect(json["timezone"]).to eq("Asia/Kolkata")
+      expect(member.reload.timezone).to eq("Asia/Kolkata")
+    end
+
+    it "returns 422 for invalid timezone" do
+      patch "/api/v1/me/timezone", params: { timezone: "Invalid/Zone" }, headers: headers
+
+      expect(response).to have_http_status(:unprocessable_entity)
+      json = JSON.parse(response.body)
+      expect(json["error"]).to include("Invalid timezone")
+    end
+
+    it "returns 422 for blank timezone" do
+      patch "/api/v1/me/timezone", params: { timezone: "" }, headers: headers
+      expect(response).to have_http_status(:unprocessable_entity)
+    end
+
+    it "returns 401 without auth" do
+      patch "/api/v1/me/timezone", params: { timezone: "UTC" }
+      expect(response).to have_http_status(:unauthorized)
+    end
+  end
+
   describe "GET /api/v1/me/mentor_sessions" do
     let(:headers) { { "X-User-Id" => mentor.id, "X-Org-Id" => organization.id } }
 

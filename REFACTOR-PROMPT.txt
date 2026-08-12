@@ -1,0 +1,16 @@
+Below are my observations.I'd like you to prioritize and ensure the app is completely working with all unit tests and load tests suites updated. I'd like you to concentrate on the app completion that broken workflow which is a mandate requirement.
+
+1. Most of you changes from the previous prompts are yet to be pushed to the origin and they still remain in the changeset.
+2. UI inconsistencies on the prev next bar of a week, when I hover/click on next it is coming out of the actual container and is overlapping with the week display container. 
+3. How will the UI look like a mentor has availabilities all through the day everyday
+4. Is the UI device agnostic meaning the UI would adapt to all screen sizes meaning it's responsive?
+5. Can we add a confirmation modal when clicking an availability ensuring users to check before they schedule, will it be a better UI/UX as what I see currently is even if we click it holds for a while until the transaction gets completed and then loads the sessions list. 
+6. In what order are we showing the sessions, shouldn't it be asc on the time of schedule or on the order of session scheduled?
+7. The search mentoring option is broken completely which is a priority and it's contradicting with the requirements that says make sure the app is running even with very limited features.
+8. How are you planning to handle pagination in the sessions list and I completely understand that we are already using pagy gem for paginating the records but from a UI perspective I don't see that option.
+9. Do you think adding a cancel/reschedule reason when doing it would be a worth product requirement?
+10. I can see that you can schedule two mentors for the same time if they have same availabilities, isn't it contradicting with the requirements document or am I misunderstanding it?
+11. I think there's data inconsistency in the seeds where if I click on a specific mentor as a member/mentor, it's not pulling any availabilities. Could you please confirm if it's a data problem or a workflow problem?
+12. Do you think reminders would be a great workflow which could be configured may be a settings tab where you can configure settings only for the mentor profile? Like notification preferences to send an email or in app notifications, reminder settings, duration preferences, buffer configuration etc., I do understand admin workflows are a not a mandate requirements but I'm just thinking from a products persppective. 
+13. In the readme document, I can see that What I Would Add With More Time  
+has to be completely revisited as we have added a lot of features on top of what's already there. Ensure you update all of the documents with regards to it, be it design, tasks, requirements, readmes, prompts and what not

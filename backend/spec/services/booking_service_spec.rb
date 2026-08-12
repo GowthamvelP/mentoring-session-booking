@@ -111,5 +111,22 @@ RSpec.describe BookingService, type: :service do
         expect(result[:booking].booked_timezone).to eq(organization.timezone)
       end
     end
+
+    context "unexpected validation error during transaction" do
+      it "returns failure when RecordInvalid is not an idempotency collision" do
+        allow(Booking).to receive(:create!).and_raise(
+          ActiveRecord::RecordInvalid.new(Booking.new)
+        )
+
+        result = described_class.call(
+          slot_id: slot.id,
+          member: member,
+          idempotency_key: SecureRandom.uuid
+        )
+
+        expect(result[:success]).to be false
+        expect(result[:status]).to eq(:unprocessable_entity)
+      end
+    end
   end
 end

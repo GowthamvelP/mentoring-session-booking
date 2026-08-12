@@ -101,6 +101,20 @@ RSpec.describe RescheduleService, type: :service do
       end
     end
 
+    context "unexpected validation error during transaction" do
+      it "returns failure with error message when RecordInvalid is raised" do
+        allow(Booking).to receive(:create!).and_raise(
+          ActiveRecord::RecordInvalid.new(Booking.new)
+        )
+
+        result = described_class.call(booking: booking, new_slot_id: new_slot.id, user: member)
+
+        expect(result[:success]).to be false
+        expect(result[:error]).to include("Reschedule failed")
+        expect(result[:status]).to eq(:unprocessable_entity)
+      end
+    end
+
     context "timezone handling" do
       it "stores provided timezone on new booking" do
         result = described_class.call(
