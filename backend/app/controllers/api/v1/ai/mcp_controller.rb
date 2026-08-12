@@ -79,41 +79,41 @@ module Api
                 }
               }
             },
-{
-  name: "get_mentor_profile",
-  description: "Get detailed profile for a specific mentor including bio, expertise, and availability settings",
-  input_schema: {
-    type: "object",
-    properties: {
-      mentor_id: { type: "string", description: "UUID of the mentor" }
-    },
-    required: [ "mentor_id" ]
-  }
-},
-{
-  name: "get_booking_details",
-  description: "Get full details of a specific booking including slot time, mentor, and status",
-  input_schema: {
-    type: "object",
-    properties: {
-      booking_id: { type: "string", description: "UUID of the booking" }
-    },
-    required: [ "booking_id" ]
-  }
-},
-{
-  name: "reschedule_booking",
-  description: "Reschedule an existing booking to a new available slot (atomic swap)",
-  input_schema: {
-    type: "object",
-    properties: {
-      booking_id: { type: "string", description: "UUID of the booking to reschedule" },
-      new_slot_id: { type: "string", description: "UUID of the new slot to move to" },
-      timezone: { type: "string", description: "IANA timezone for the rescheduled booking" }
-    },
-    required: [ "booking_id", "new_slot_id" ]
-  }
-}
+            {
+              name: "get_mentor_profile",
+              description: "Get detailed profile for a specific mentor including bio, expertise, and availability settings",
+              input_schema: {
+                type: "object",
+                properties: {
+                  mentor_id: { type: "string", description: "UUID of the mentor" }
+                },
+                required: [ "mentor_id" ]
+              }
+            },
+            {
+              name: "get_booking_details",
+              description: "Get full details of a specific booking including slot time, mentor, and status",
+              input_schema: {
+                type: "object",
+                properties: {
+                  booking_id: { type: "string", description: "UUID of the booking" }
+                },
+                required: [ "booking_id" ]
+              }
+            },
+            {
+              name: "reschedule_booking",
+              description: "Reschedule an existing booking to a new available slot (atomic swap)",
+              input_schema: {
+                type: "object",
+                properties: {
+                  booking_id: { type: "string", description: "UUID of the booking to reschedule" },
+                  new_slot_id: { type: "string", description: "UUID of the new slot to move to" },
+                  timezone: { type: "string", description: "IANA timezone for the rescheduled booking" }
+                },
+                required: [ "booking_id", "new_slot_id" ]
+              }
+            }
           ]
         end
 
@@ -241,6 +241,90 @@ module Api
               }
             end
           }
+        end
+
+        def tool_get_mentor_profile(args)
+          mentor = User.mentors.includes(:mentor_profile).find_by(id: args["mentor_id"])
+          return { error: "Mentor not found" } unless mentor
+
+          profile = mentor.mentor_profile
+          {
+            mentor: {
+              id: mentor.id,
+              name: mentor.name,
+              email: mentor.email,
+              role: mentor.role,
+              bio: profile&.bio,
+              expertise: profile&.expertise || [],
+              buffer_minutes: profile&.respond_to?(:buffer_minutes) ? profile&.buffer_minutes : nil,
+              availability: {
+                total_slots: mentor.slots.count,
+                available_slots: mentor.slots.where(status: :available).count,
+                booked_slots: mentor.slots.where(status: :booked).count
+              }
+            }
+          }
+        end
+
+        def tool_get_booking_details(args)
+          booking = Booking.includes(slot: { mentor: :mentor_profile }, member: [])
+                           .find_by(id: args["booking_id"])
+          return { error: "Booking not found" } unless booking
+
+          {
+            booking: {
+              id: booking.id,
+              status: booking.status,
+              booked_at: booking.booked_at&.utc&.iso8601,
+              cancelled_at: booking.cancelled_at&.utc&.iso8601,
+              cancellation_reason: booking.cancellation_reason,
+              booked_timezone: booking.booked_timezone,
+              slot: {
+                id: booking.slot.id,
+                start_time: booking.slot.start_time.utc.iso8601,
+                end_time: booking.slot.end_time.utc.iso8601
+              },
+              mentor: {
+                id: booking.slot.mentor.id,
+                name: booking.slot.mentor.name,
+                expertise: booking.slot.mentor.mentor_profile&.expertise || []
+              },
+              member: {
+                id: booking.member.id,
+                name: booking.member.name,
+                email: booking.member.email
+              }
+            }
+          }
+        end
+
+        def tool_reschedule_booking(args)
+          booking = Booking.find_by(id: args["booking_id"])
+          return { error: "Booking not found" } unless booking
+
+          result = RescheduleService.call(
+            booking: booking,
+            new_slot_id: args["new_slot_id"],
+            user: current_user,
+            timezone: args["timezone"]
+          )
+
+          if result[:success]
+            new_booking = result[:booking]
+            {
+              success: true,
+              booking: {
+                id: new_booking.id,
+                status: new_booking.status,
+                slot_start: new_booking.slot.start_time.utc.iso8601,
+                slot_end: new_booking.slot.end_time.utc.iso8601,
+                mentor: new_booking.slot.mentor.name,
+                booked_timezone: new_booking.booked_timezone
+              }
+            }
+          else
+            { success: false, error: result[:error] }
+          end
         end
       end
     end
