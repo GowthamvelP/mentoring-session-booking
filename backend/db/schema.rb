@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_08_12_120002) do
+ActiveRecord::Schema[8.1].define(version: 2026_08_12_120003) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
   enable_extension "pg_trgm"
@@ -34,6 +34,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_08_12_120002) do
     t.index ["member_id"], name: "index_bookings_on_member_id"
     t.index ["organization_id"], name: "index_bookings_on_organization_id"
     t.index ["slot_id"], name: "index_bookings_on_slot_id"
+    t.index ["slot_id"], name: "index_bookings_on_slot_id_active_unique", unique: true, where: "((status)::text <> 'cancelled'::text)"
   end
 
   create_table "mentor_profiles", id: :uuid, default: -> { "gen_random_uuid()" }, force: :cascade do |t|

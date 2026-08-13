@@ -135,4 +135,22 @@ RSpec.describe RescheduleService, type: :service do
       end
     end
   end
+
+  context "atomicity on failure" do
+    it "preserves original booking when new slot is unavailable" do
+      ActsAsTenant.current_tenant = organization
+      new_slot.update!(status: :booked)
+
+      result = described_class.call(
+        booking: booking,
+        new_slot_id: new_slot.id,
+        user: member,
+        timezone: "UTC"
+      )
+
+      expect(result[:success]).to be false
+      expect(booking.reload.status).to eq("confirmed")
+      expect(original_slot.reload.status).to eq("booked")
+    end
+  end
 end
