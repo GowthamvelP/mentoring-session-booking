@@ -106,4 +106,3 @@ RSpec.describe NotificationService, type: :service do
     end
   end
 end
-
