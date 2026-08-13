@@ -39,6 +39,8 @@ The seed script creates sample data (2 orgs, 4 mentors, 4 members, 40+ slots) �
 
 ## Architecture
 
+> 📊 **Detailed diagrams:** See [docs/DIAGRAMS.md](docs/DIAGRAMS.md) for ER diagram, service architecture, booking flow sequence, and concurrency safety visualization (Mermaid — renders on GitHub).
+
 ```
 +---------------------------------------------------------------------+
 |                          Docker Network                              |

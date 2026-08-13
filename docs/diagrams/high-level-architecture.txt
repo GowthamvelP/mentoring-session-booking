@@ -1,0 +1,52 @@
+graph TB
+    subgraph Client Tier
+        WA[Web App / Web Browser]
+        MA[Mobile / Native App]
+    end
+
+    subgraph API Tier
+        GW[API Gateway / Router]
+        AUTH[Auth & User Service]
+        MENTOR[Mentor & Slot Management]
+        BOOKING[Booking Engine & State Machine]
+        REVIEW[Review System]
+    end
+
+    subgraph Data Storage
+        DB[(Primary DB: PostgreSQL / MySQL)]
+        CACHE[(Cache Store: Redis)]
+    end
+
+    subgraph Background Processing
+        QUEUE[Job Queue / Async Workers]
+    end
+
+    subgraph External Integrations
+        PAY[Payment Gateway: Stripe / Razorpay]
+        MEET[Video Conferencing: Zoom / Google Meet]
+        EMAIL[Email Service: SendGrid]
+        CAL[Google Calendar Sync]
+    end
+
+    WA -->|HTTPS / REST / WebSockets| GW
+    MA -->|HTTPS / REST / WebSockets| GW
+
+    GW --> AUTH
+    GW --> MENTOR
+    GW --> BOOKING
+    GW --> REVIEW
+
+    AUTH --> DB
+    MENTOR --> DB
+    BOOKING --> DB
+    REVIEW --> DB
+
+    AUTH --> CACHE
+    MENTOR --> CACHE
+    BOOKING --> CACHE
+
+    BOOKING --> QUEUE
+    QUEUE --> PAY
+    QUEUE --> MEET
+    QUEUE --> EMAIL
+    QUEUE --> CAL

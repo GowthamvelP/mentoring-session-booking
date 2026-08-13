@@ -1,0 +1,199 @@
+1. High-Level System Architecture
+The application is structured as a modern multi-tier web application handling real-time availability, booking state machines, notifications, and third-party integrations (payments, video conferencing, and calendar sync).
+
++-----------------------------------------------------------------------+
+|                             CLIENT TIER                               |
+|   +--------------------------+          +-------------------------+   |
+|   |   Web App / Web Browser  |          |   Mobile / Native App   |   |
+|   +------------+-------------+          +------------+------------+   |
++----------------|-------------------------------------|----------------+
+                 | HTTPS / REST / WebSockets           |
+                 v                                     v
++-----------------------------------------------------------------------+
+|                            API / APPLICATION                          |
+|  +-----------------------------------------------------------------+  |
+|  |                        API Gateway / Router                     |  |
+|  +--+-------------------+--------------------+------------------+-+  |
+|     |                   |                    |                  |    |
+|  +--v-------------+  +--v--------------+  +--v------------+  +--v--+ |
+|  | Auth & User    |  | Mentor & Slot   |  | Booking Engine|  | Review|
+|  | Service        |  | Management      |  | & State Machine| | System|
+|  +----------------+  +-----------------+  +---------------+  +-----+ |
++-----------------------------------------------------------------------+
+                                  |
+         +------------------------+------------------------+
+         |                                                 |
++--------v------------------------------+       +----------v------------+
+|            DATA STORAGE               |       |   BACKGROUND WORKERS  |
+|  +---------------------------------+  |       |  +-----------------+  |
+|  | Primary DB (PostgreSQL / MySQL) |  |       |  | Job Queue /     |  |
+|  +---------------------------------+  |       |  | Async Processing|  |
+|  | Cache Store (Redis)             |  |       |  +--------+--------+  |
+|  +---------------------------------+  |               |               |
++---------------------------------------+               v               |
+                                                +-----------------------+
+                                                | EXTERNAL INTEGRATIONS |
+                                                |  - Stripe/Razorpay    |
+                                                |  - Zoom/Google Meet   |
+                                                |  - Email (SendGrid)   |
+                                                |  - Google Calendar    |
+                                                +-----------------------+
+2. Database Schema (Entity-Relationship Diagram)
+Below is the relational database schema defining all core entities, data types, primary keys (PK), foreign keys (FK), and constraints.
+
++---------------------------------+        +----------------------------------+
+|             users               |        |         mentor_profiles          |
++---------------------------------+        +----------------------------------+
+| id          : UUID / BIGINT     |<-------| id           : UUID / BIGINT     |
+| email       : VARCHAR(255) [UQ] |        | user_id      : BIGINT [FK, UQ]  |
+| name        : VARCHAR(255)      |        | title        : VARCHAR(255)      |
+| role        : ENUM              |        | bio          : TEXT             |
+| password_hash: VARCHAR(255)     |        | hourly_rate  : DECIMAL(10,2)    |
+| timezone    : VARCHAR(50)       |        | currency     : VARCHAR(3)       |
+| avatar_url  : VARCHAR(500)      |        | is_approved  : BOOLEAN          |
+| created_at  : TIMESTAMP         |        | created_at   : TIMESTAMP        |
+| updated_at  : TIMESTAMP         |        +----------------------------------+
++---------------------------------+                         |
+      |                 |                                   |
+      |                 | 1:N                               | 1:N
+      | 1:N             v                                   v
+      |        +------------------+        +----------------------------------+
+      |        |     reviews      |        |        availability_slots        |
+      |        +------------------+        +----------------------------------+
+      |        | id        : PK   |        | id           : UUID / BIGINT     |
+      |        | booking_id: FK   |        | mentor_id    : BIGINT [FK]      |
+      |        | mentee_id : FK   |        | start_time   : TIMESTAMP        |
+      |        | mentor_id : FK   |        | end_time     : TIMESTAMP        |
+      |        | rating    : INT  |        | is_booked    : BOOLEAN          |
+      |        | comment   : TEXT |        | created_at   : TIMESTAMP        |
+      v        +------------------+        +----------------------------------+
++---------------------------------+                         |
+|            bookings             |                         |
++---------------------------------+                         |
+| id            : UUID / BIGINT   |                         |
+| mentee_id     : BIGINT [FK]     |                         |
+| mentor_id     : BIGINT [FK]     |                         |
+| slot_id       : BIGINT [FK, UQ]-|<------------------------+
+| status        : ENUM            |  (pending, confirmed, cancelled, completed)
+| meeting_link  : VARCHAR(500)    |
+| notes         : TEXT            |
+| total_amount  : DECIMAL(10,2)   |
+| created_at    : TIMESTAMP       |
++---------------------------------+
+                 |
+                 | 1:1
+                 v
++---------------------------------+
+|            payments             |
++---------------------------------+
+| id             : UUID / BIGINT  |
+| booking_id     : BIGINT [FK, UQ]|
+| transaction_ref: VARCHAR(255)   |
+| amount         : DECIMAL(10,2)  |
+| status         : ENUM           |  (pending, paid, failed, refunded)
+| provider       : VARCHAR(50)    |
+| created_at     : TIMESTAMP      |
++---------------------------------+
+3. Class Diagram
+The Object-Oriented design represents domain models, controllers, and service objects that encapsulate business logic.
+
++-----------------------------------------------------+
+|                        User                         |
++-----------------------------------------------------+
+| - id: String                                        |
+| - email: String                                     |
+| - name: String                                      |
+| - role: UserRole                                    |
+| - timezone: String                                  |
++-----------------------------------------------------+
+| + register(): User                                  |
+| + authenticate(password: String): Boolean           |
+| + updateProfile(data: Object): Boolean              |
++-----------------------------------------------------+
+                          ^
+                          | 1:1
++-----------------------------------------------------+
+|                    MentorProfile                    |
++-----------------------------------------------------+
+| - id: String                                        |
+| - userId: String                                    |
+| - title: String                                     |
+| - bio: String                                       |
+| - hourlyRate: Decimal                               |
+| - skills: List<String>                              |
++-----------------------------------------------------+
+| + addAvailabilitySlot(start, end): AvailabilitySlot |
+| + updateRate(rate: Decimal): Void                   |
++-----------------------------------------------------+
+                          | 1:N
+                          v
++-----------------------------------------------------+
+|                  AvailabilitySlot                   |
++-----------------------------------------------------+
+| - id: String                                        |
+| - mentorId: String                                  |
+| - startTime: DateTime                               |
+| - endTime: DateTime                                 |
+| - isBooked: Boolean                                 |
++-----------------------------------------------------+
+| + markAsBooked(): Void                              |
+| + releaseSlot(): Void                               |
++-----------------------------------------------------+
+                          | 1:1
+                          v
++-----------------------------------------------------+
+|                       Booking                       |
++-----------------------------------------------------+
+| - id: String                                        |
+| - menteeId: String                                  |
+| - mentorId: String                                  |
+| - slotId: String                                    |
+| - status: BookingStatus                             |
+| - meetingLink: String                               |
+| - amount: Decimal                                   |
++-----------------------------------------------------+
+| + confirmBooking(): Void                            |
+| + cancelBooking(reason: String): Void               |
+| + completeBooking(): Void                           |
++-----------------------------------------------------+
+           |                             |
+       1:1 |                         1:1 |
+           v                             v
++-----------------------+     +-----------------------+
+|        Payment        |     |        Review         |
++-----------------------+     +-----------------------+
+| - id: String          |     | - id: String          |
+| - bookingId: String   |     | - rating: Integer     |
+| - status: PayStatus   |     | - comment: String     |
+| - transactionId: Str  |     +-----------------------+
++-----------------------+     | + submit(): Review    |
+| + processPayment(): B |     +-----------------------+
+| + refund(): Boolean   |
++-----------------------+
+4. Sequence & Interaction Workflow
+This diagram outlines the complete sequence when a mentee selects an available slot, completes payment, and receives a confirmed booking with a video meeting link.
+
+Mentee                Frontend               API / Backend            Payment Gateway        Video Service
+  |                      |                         |                        |                      |
+  |--- 1. Select Slot -->|                         |                        |                      |
+  |    & Request Booking |                         |                        |                      |
+  |                      |--- 2. Create Booking -->|                        |                      |
+  |                      |       (Status: Pending) |                        |                      |
+  |                      |                         |--- 3. Lock Slot ------>|                      |
+  |                      |                         |    (Atomic check)      |                      |
+  |                      |                         |                        |                      |
+  |                      |<-- 4. Return Payment ---|                        |                      |
+  |                      |       Intent / Token    |                        |                      |
+  |                      |                         |                        |                      |
+  |--- 5. Pay Amount --->|                         |                        |                      |
+  |                      |--- 6. Submit Payment -->|                        |                      |
+  |                      |                         |--- 7. Charge Payment ->|                      |
+  |                      |                         |<-- 8. Payment Success -|                      |
+  |                      |                         |                        |                      |
+  |                      |                         |--- 9. Generate Link ------------------------->|
+  |                      |                         |<-- 10. Return Meeting URL --------------------|
+  |                      |                         |                        |                      |
+  |                      |                         |--- 11. Confirm Booking &                      |
+  |                      |                         |        Send Email Reminders                   |
+  |                      |<-- 12. Booking Confirmed|                        |                      |
+  |                      |        & Meeting Link   |                        |                      |

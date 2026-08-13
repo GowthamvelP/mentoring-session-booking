@@ -1,0 +1,31 @@
+sequenceDiagram
+    autonumber
+    actor Mentee
+    participant FE as Frontend App
+    participant API as API / Backend
+    participant DB as Database
+    participant PG as Payment Gateway
+    participant VS as Video Service
+
+    Mentee->>FE: Select Slot & Request Booking
+    FE->>API: POST /bookings (Create Pending Booking)
+    
+    rect rgb(240, 240, 240)
+        note over API,DB: Atomic Transaction / Lock
+        API->>DB: Check slot availability & SELECT ... FOR UPDATE
+        DB-->>API: Slot available
+        API->>DB: Lock slot (is_booked = true) & Create booking (status = PENDING)
+    end
+
+    API-->>FE: Return Payment Intent / Token
+    Mentee->>FE: Enter Payment Details & Confirm
+    FE->>API: POST /payments/process
+    API->>PG: Charge Payment
+    PG-->>API: Payment Successful
+
+    API->>VS: Create Meeting Room (Zoom/Google Meet)
+    VS-->>API: Return Meeting URL
+
+    API->>DB: Update Booking (status = CONFIRMED, meeting_link)
+    API-->>FE: Return Booking Confirmation + Meeting Link
+    FE-->>Mentee: Show Success Screen & Calendar Sync

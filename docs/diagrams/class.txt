@@ -1,0 +1,69 @@
+classDiagram
+    class User {
+        -String id
+        -String email
+        -String name
+        -UserRole role
+        -String timezone
+        +register() User
+        +authenticate(password: String) Boolean
+        +updateProfile(data: Object) Boolean
+    }
+
+    class MentorProfile {
+        -String id
+        -String userId
+        -String title
+        -String bio
+        -Decimal hourlyRate
+        -List~String~ skills
+        +addAvailabilitySlot(start: DateTime, end: DateTime) AvailabilitySlot
+        +updateRate(rate: Decimal) Void
+    }
+
+    class AvailabilitySlot {
+        -String id
+        -String mentorId
+        -DateTime startTime
+        -DateTime endTime
+        -Boolean isBooked
+        +markAsBooked() Void
+        +releaseSlot() Void
+    }
+
+    class Booking {
+        -String id
+        -String menteeId
+        -String mentorId
+        -String slotId
+        -BookingStatus status
+        -String meetingLink
+        -Decimal amount
+        +confirmBooking() Void
+        +cancelBooking(reason: String) Void
+        +completeBooking() Void
+    }
+
+    class Payment {
+        -String id
+        -String bookingId
+        -PayStatus status
+        -String transactionId
+        +processPayment() Boolean
+        +refund() Boolean
+    }
+
+    class Review {
+        -String id
+        -String bookingId
+        -Integer rating
+        -String comment
+        +submit() Review
+    }
+
+    User "1" -- "0..1" MentorProfile : profile
+    MentorProfile "1" -- "0..*" AvailabilitySlot : provides
+    AvailabilitySlot "1" -- "0..1" Booking : locks
+    User "1" -- "0..*" Booking : books
+    Booking "1" -- "1" Payment : processed by
+    Booking "1" -- "0..1" Review : generates

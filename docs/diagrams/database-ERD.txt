@@ -1,0 +1,73 @@
+erDiagram
+    users ||--o| mentor_profiles : "has profile"
+    users ||--o{ reviews : "writes"
+    users ||--o{ bookings : "books as mentee"
+    mentor_profiles ||--o{ availability_slots : "owns"
+    mentor_profiles ||--o{ bookings : "receives"
+    availability_slots ||--o| bookings : "assigned to"
+    bookings ||--o| payments : "has transaction"
+    bookings ||--o| reviews : "has review"
+
+    users {
+        uuid id PK
+        string email UK
+        string name
+        enum role
+        string password_hash
+        string timezone
+        string avatar_url
+        timestamp created_at
+        timestamp updated_at
+    }
+
+    mentor_profiles {
+        uuid id PK
+        uuid user_id FK,UK
+        string title
+        text bio
+        decimal hourly_rate
+        string currency
+        boolean is_approved
+        timestamp created_at
+    }
+
+    availability_slots {
+        uuid id PK
+        uuid mentor_id FK
+        timestamp start_time
+        timestamp end_time
+        boolean is_booked
+        timestamp created_at
+    }
+
+    bookings {
+        uuid id PK
+        uuid mentee_id FK
+        uuid mentor_id FK
+        uuid slot_id FK,UK
+        enum status
+        string meeting_link
+        text notes
+        decimal total_amount
+        timestamp created_at
+    }
+
+    payments {
+        uuid id PK
+        uuid booking_id FK,UK
+        string transaction_ref
+        decimal amount
+        enum status
+        string provider
+        timestamp created_at
+    }
+
+    reviews {
+        uuid id PK
+        uuid booking_id FK
+        uuid mentee_id FK
+        uuid mentor_id FK
+        integer rating
+        text comment
+        timestamp created_at
+    }
