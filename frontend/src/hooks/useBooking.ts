@@ -49,7 +49,7 @@ export function useCancelBooking() {
   const queryClient = useQueryClient()
 
   return useMutation({
-    mutationFn: (bookingId: string) => cancelBooking(bookingId),
+    mutationFn: ({ bookingId, reason }: { bookingId: string; reason?: string }) => cancelBooking(bookingId, reason),
     onSuccess: () => {
       // Invalidate sessions to reflect cancelled status
       queryClient.invalidateQueries({ queryKey: QUERY_KEYS.sessions })

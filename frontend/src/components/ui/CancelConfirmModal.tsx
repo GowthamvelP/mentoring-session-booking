@@ -1,3 +1,4 @@
+import { useState } from "react"
 import { Button } from './Button'
 import { formatSlotDateTime, formatSlotTime, getTimezoneAbbreviation } from '../../lib/dates'
 
@@ -22,6 +23,8 @@ export function CancelConfirmModal({
   onConfirm,
   onCancel,
 }: CancelConfirmModalProps) {
+  const [reason, setReason] = useState("")
+
   if (!isOpen) return null
 
   const date = formatSlotDateTime(slotStartTime, timezone)
@@ -49,11 +52,22 @@ export function CancelConfirmModal({
           <p className="text-xs text-text-dim">{timeRange} ({tzAbbr})</p>
         </div>
 
-        <div className="mt-5 flex gap-3">
+        <div className="mt-4">
+          <label className="text-xs text-text-dim mb-1 block">Reason (optional)</label>
+          <textarea
+            value={reason}
+            onChange={(e) => setReason(e.target.value)}
+            placeholder="Why are you cancelling?"
+            className="w-full rounded-lg border border-surface-border bg-surface p-2 text-sm text-text placeholder-text-dim focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary resize-none"
+            rows={2}
+          />
+        </div>
+
+        <div className="mt-4 flex gap-3">
           <Button variant="secondary" className="flex-1" onClick={onCancel} disabled={isLoading}>
             Keep Session
           </Button>
-          <Button variant="danger" className="flex-1" onClick={() => onConfirm()} loading={isLoading}>
+          <Button variant="danger" className="flex-1" onClick={() => onConfirm(reason || undefined)} loading={isLoading}>
             Yes, Cancel
           </Button>
         </div>

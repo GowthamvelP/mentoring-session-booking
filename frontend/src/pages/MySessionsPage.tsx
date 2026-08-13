@@ -45,9 +45,9 @@ export function MySessionsPage() {
     }
   }
 
-  const handleConfirmCancel = () => {
+  const handleConfirmCancel = (reason?: string) => {
     if (!cancelTarget) return
-    cancelMutation.mutate(cancelTarget.id, {
+    cancelMutation.mutate({ bookingId: cancelTarget.id, reason }, {
       onSuccess: () => {
         showToast('Session cancelled', 'success')
         setCancelTarget(null)
@@ -112,7 +112,7 @@ export function MySessionsPage() {
                   bookings={upcoming}
                   onCancel={handleCancel}
                   onReschedule={handleReschedule}
-                  actioningId={cancelMutation.isPending ? cancelMutation.variables : null}
+                  actioningId={cancelMutation.isPending ? (cancelMutation.variables as { bookingId: string })?.bookingId : null}
                 />
               </section>
             )}

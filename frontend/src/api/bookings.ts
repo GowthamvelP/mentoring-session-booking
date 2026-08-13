@@ -10,8 +10,8 @@ export async function createBooking(slotId: string, idempotencyKey: string, time
   return data.data ?? data
 }
 
-export async function cancelBooking(bookingId: string): Promise<Booking> {
-  const { data } = await apiClient.patch(`/bookings/${bookingId}/cancel`)
+export async function cancelBooking(bookingId: string, reason?: string): Promise<Booking> {
+  const { data } = await apiClient.patch(`/bookings/${bookingId}/cancel`, { reason })
   return data.data ?? data
 }
 
