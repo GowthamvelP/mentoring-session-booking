@@ -71,16 +71,17 @@ class NotificationService
     def booking_rescheduled(old_booking, new_booking)
       mentor = new_booking.slot.mentor
       member = new_booking.member
-      tz = new_booking.booked_timezone || new_booking.organization.timezone
-      old_time = format_time(old_booking.slot.start_time, tz)
-      new_time = format_time(new_booking.slot.start_time, tz)
+
+      # Each recipient sees times in THEIR timezone
+      member_tz = recipient_timezone(member, new_booking)
+      mentor_tz = recipient_timezone(mentor, new_booking)
 
       create_notification(
         user: member,
         booking: new_booking,
         type: "booking_rescheduled",
         title: "Session Rescheduled",
-        body: "Your session with #{mentor.name} moved from #{old_time} to #{new_time}."
+        body: "Your session with #{mentor.name} moved from #{format_time(old_booking.slot.start_time, member_tz)} to #{format_time(new_booking.slot.start_time, member_tz)}."
       )
 
       create_notification(
@@ -88,7 +89,7 @@ class NotificationService
         booking: new_booking,
         type: "booking_rescheduled",
         title: "Session Rescheduled",
-        body: "#{member.name} rescheduled from #{old_time} to #{new_time}."
+        body: "#{member.name} rescheduled from #{format_time(old_booking.slot.start_time, mentor_tz)} to #{format_time(new_booking.slot.start_time, mentor_tz)}."
       )
     end
 
