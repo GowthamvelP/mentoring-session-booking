@@ -29,7 +29,7 @@ docker-compose up --build
 # Health Check:    http://localhost:3000/api/v1/health
 
 # 3. Run tests
-docker-compose exec backend bundle exec rspec       # 204 specs, 91.86% coverage
+docker-compose exec backend bundle exec rspec       # 252 specs, 98.36% coverage
 docker-compose exec frontend npm run test:run       # Vitest + RTL
 ```
 
@@ -99,7 +99,7 @@ The seed script creates sample data (2 orgs, 4 mentors, 4 members, 40+ slots) �
 - **Add to Calendar** — Google Calendar link + .ics file download
 
 ### Scheduling Intelligence
-- **Per-booking timezone storage** — stored at booking time, never drifts
+- **Per-booking timezone storage** — stored at booking time; notifications/emails use recipient's personal timezone (Google Calendar pattern: same UTC moment, different display per viewer)
 - **Timezone selector** — full IANA timezone list via `@vvo/tzdb`
 - **Runtime buffer enforcement** — configurable minutes between mentor sessions
 - **Per-member booking limits** — configurable per organization (`max_active_bookings`)
@@ -121,17 +121,22 @@ A structured document at project root that gives AI coding assistants immediate 
 Machine-readable endpoint returning system metadata, schema definitions, conventions, available endpoints, and AI feature flags. Enables autonomous agents to understand the system without reading source code.
 
 ### MCP Server — Model Context Protocol
-Full MCP implementation with 5 tools:
+Full MCP implementation with 8 tools:
 
 | Tool | Description |
 |------|-------------|
 | `list_mentors` | Search/browse mentors with expertise filtering |
+| `get_mentor_profile` | Detailed mentor profile (bio, expertise, buffer settings) |
+| `get_booking_details` | Full booking details (slot, mentor, member, status) |
+| `reschedule_booking` | Atomic reschedule to a new slot |
 | `list_slots` | Get available slots for a mentor (date range) |
 | `book_slot` | Book a session (with timezone) |
 | `cancel_booking` | Cancel with reason (respects 1-hour window) |
 | `my_sessions` | View member's sessions (status filter) |
 
 Endpoints: `GET /api/v1/ai/mcp/tools` (definitions) + `POST /api/v1/ai/mcp/call` (execution)
+
+MCP stdio server (`mcp-server/server.js`) enables Kiro/Cursor to call tools directly via JSON-RPC.
 
 ### Pre-Session Brief Job
 Async Sidekiq job (`BookingBriefJob`) on dedicated `ai` queue generates AI-powered preparation notes for mentors. Currently runs in stub mode; production path documented for OpenAI GPT-4o-mini integration with token tracking.
@@ -204,7 +209,7 @@ Verified by `spec/services/concurrency_spec.rb`: 5 threads, 1 winner, 0 duplicat
 
 ## Testing
 
-**204 specs, 0 failures, 91.86% line coverage.** Run with: `bundle exec rspec`
+**252 specs, 0 failures, 98.36% line coverage.** Run with: `bundle exec rspec`
 
 ### Correctness Properties Tested
 
