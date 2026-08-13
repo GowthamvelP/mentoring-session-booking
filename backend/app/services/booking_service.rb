@@ -37,19 +37,21 @@ class BookingService
       return { success: true, booking: existing, existing: true }
     end
 
-    # 1.5. Per-member booking limit check
-    max_bookings = ActsAsTenant.current_tenant&.max_active_bookings
-    if max_bookings && @member.bookings.active.count >= max_bookings
-      Rails.logger.warn("BookingService: booking limit reached for member=#{@member.id}, limit=#{max_bookings}")
-      return { success: false, error: "Booking limit reached (maximum #{max_bookings} active sessions)", status: :unprocessable_entity }
-    end
-
     # 2. Pessimistic lock + atomic booking
     booking = nil
 
     ActiveRecord::Base.transaction do
-      # SELECT FOR UPDATE — locks the row until transaction commits
+      # SELECT FOR UPDATE — locks the slot row until transaction commits
       slot = Slot.lock("FOR UPDATE").find(@slot_id)
+
+      # 2.1 Per-member booking limit check (INSIDE transaction for atomicity)
+      # Advisory lock on member_id prevents two threads from passing the count check simultaneously
+      ActiveRecord::Base.connection.execute("SELECT pg_advisory_xact_lock(#{@member.id.hash.abs})")
+      max_bookings = ActsAsTenant.current_tenant&.max_active_bookings
+      if max_bookings && @member.bookings.active.count >= max_bookings
+        Rails.logger.warn("BookingService: booking limit reached for member=#{@member.id}, limit=#{max_bookings}")
+        raise BookingLimitExceededError, "Booking limit reached (maximum #{max_bookings} active sessions)"
+      end
 
       # Validate slot is available
       unless slot.available?
@@ -96,6 +98,9 @@ class BookingService
   rescue BufferViolationError => e
     Rails.logger.warn("BookingService: buffer violation for slot=#{@slot_id} — #{e.message}")
     { success: false, error: e.message, status: :conflict }
+  rescue BookingLimitExceededError => e
+    Rails.logger.warn("BookingService: limit exceeded for member=#{@member.id} — #{e.message}")
+    { success: false, error: e.message, status: :unprocessable_entity }
   rescue ActiveRecord::RecordNotFound
     Rails.logger.warn("BookingService: slot not found, slot_id=#{@slot_id}")
     { success: false, error: "Slot not found", status: :not_found }
@@ -132,4 +137,5 @@ class BookingService
 
   class SlotUnavailableError < StandardError; end
   class BufferViolationError < StandardError; end
+  class BookingLimitExceededError < StandardError; end
 end

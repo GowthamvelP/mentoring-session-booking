@@ -5,9 +5,9 @@
     "simplecov_version": "1.1.0",
     "command_name": "RSpec",
     "project_name": "Backend",
-    "timestamp": "2026-08-13T20:05:47.057+05:30",
+    "timestamp": "2026-08-13T20:35:52.547+05:30",
     "root": "/Users/gowthamvelpalanivel/Projects/mentoring-session-booking/backend",
-    "commit": "6c0d7714173ed5209c5ddd03f782f06d2ded4a6b",
+    "commit": "b524278c84bbca7ffda5f8e93971797face6cd39",
     "primary_coverage": "line",
     "line_coverage": true,
     "branch_coverage": false,
@@ -15,12 +15,12 @@
   },
   "total": {
     "lines": {
-      "covered": 661,
+      "covered": 665,
       "missed": 11,
-      "omitted": 1216,
-      "total": 672,
-      "percent": 98.36309523809524,
-      "strength": 10.400297619047619
+      "omitted": 1218,
+      "total": 676,
+      "percent": 98.37278106508876,
+      "strength": 10.403846153846153
     }
   },
   "coverage": {
@@ -1641,7 +1641,7 @@
         1,
         5,
         5,
-        4,
+        19,
         null,
         null,
         null,
@@ -2552,7 +2552,7 @@
         1,
         1,
         null,
-        33,
+        31,
         1,
         null
       ],
@@ -3227,19 +3227,21 @@
         "      return { success: true, booking: existing, existing: true }",
         "    end",
         "",
-        "    # 1.5. Per-member booking limit check",
-        "    max_bookings = ActsAsTenant.current_tenant&.max_active_bookings",
-        "    if max_bookings && @member.bookings.active.count >= max_bookings",
-        "      Rails.logger.warn(\"BookingService: booking limit reached for member=#{@member.id}, limit=#{max_bookings}\")",
-        "      return { success: false, error: \"Booking limit reached (maximum #{max_bookings} active sessions)\", status: :unprocessable_entity }",
-        "    end",
-        "",
         "    # 2. Pessimistic lock + atomic booking",
         "    booking = nil",
         "",
         "    ActiveRecord::Base.transaction do",
-        "      # SELECT FOR UPDATE — locks the row until transaction commits",
+        "      # SELECT FOR UPDATE — locks the slot row until transaction commits",
         "      slot = Slot.lock(\"FOR UPDATE\").find(@slot_id)",
+        "",
+        "      # 2.1 Per-member booking limit check (INSIDE transaction for atomicity)",
+        "      # Advisory lock on member_id prevents two threads from passing the count check simultaneously",
+        "      ActiveRecord::Base.connection.execute(\"SELECT pg_advisory_xact_lock(#{@member.id.hash.abs})\")",
+        "      max_bookings = ActsAsTenant.current_tenant&.max_active_bookings",
+        "      if max_bookings && @member.bookings.active.count >= max_bookings",
+        "        Rails.logger.warn(\"BookingService: booking limit reached for member=#{@member.id}, limit=#{max_bookings}\")",
+        "        raise BookingLimitExceededError, \"Booking limit reached (maximum #{max_bookings} active sessions)\"",
+        "      end",
         "",
         "      # Validate slot is available",
         "      unless slot.available?",
@@ -3286,6 +3288,9 @@
         "  rescue BufferViolationError => e",
         "    Rails.logger.warn(\"BookingService: buffer violation for slot=#{@slot_id} — #{e.message}\")",
         "    { success: false, error: e.message, status: :conflict }",
+        "  rescue BookingLimitExceededError => e",
+        "    Rails.logger.warn(\"BookingService: limit exceeded for member=#{@member.id} — #{e.message}\")",
+        "    { success: false, error: e.message, status: :unprocessable_entity }",
         "  rescue ActiveRecord::RecordNotFound",
         "    Rails.logger.warn(\"BookingService: slot not found, slot_id=#{@slot_id}\")",
         "    { success: false, error: \"Slot not found\", status: :not_found }",
@@ -3322,6 +3327,7 @@
         "",
         "  class SlotUnavailableError < StandardError; end",
         "  class BufferViolationError < StandardError; end",
+        "  class BookingLimitExceededError < StandardError; end",
         "end"
       ],
       "lines": [
@@ -3366,17 +3372,19 @@
         null,
         null,
         31,
+        null,
         31,
+        null,
+        31,
+        null,
+        null,
+        null,
+        29,
+        29,
+        29,
         1,
         1,
         null,
-        null,
-        null,
-        30,
-        null,
-        30,
-        null,
-        30,
         null,
         null,
         28,
@@ -3424,6 +3432,9 @@
         1,
         1,
         null,
+        1,
+        1,
+        null,
         2,
         2,
         null,
@@ -3459,13 +3470,14 @@
         null,
         1,
         1,
+        1,
         null
       ],
-      "lines_covered_percent": 98.11320754716981,
-      "covered_lines": 52,
+      "lines_covered_percent": 98.24561403508773,
+      "covered_lines": 56,
       "missed_lines": 1,
-      "omitted_lines": 82,
-      "total_lines": 53
+      "omitted_lines": 84,
+      "total_lines": 57
     },
     "app/services/cancellation_service.rb": {
       "source": [
@@ -4271,7 +4283,7 @@
         "omitted": 578,
         "total": 281,
         "percent": 98.932384341637,
-        "strength": 6.395017793594306
+        "strength": 6.448398576512456
       },
       "files": [
         "app/controllers/api/v1/ai/context_controller.rb",
@@ -4308,7 +4320,7 @@
         "omitted": 58,
         "total": 77,
         "percent": 100.0,
-        "strength": 22.558441558441558
+        "strength": 22.532467532467532
       },
       "files": [
         "app/models/application_record.rb",
@@ -4377,12 +4389,12 @@
     },
     "Ungrouped": {
       "lines": {
-        "covered": 226,
+        "covered": 230,
         "missed": 6,
-        "omitted": 426,
-        "total": 232,
-        "percent": 97.41379310344827,
-        "strength": 13.900862068965518
+        "omitted": 428,
+        "total": 236,
+        "percent": 97.45762711864407,
+        "strength": 13.796610169491526
       },
       "files": [
         "app/middleware/correlation_id_middleware.rb",
